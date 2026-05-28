@@ -1,0 +1,262 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --background: 222 48% 6%;
+  --foreground: 210 38% 96%;
+  --border: 222 26% 20%;
+  --muted: 220 22% 13%;
+  --muted-foreground: 218 13% 68%;
+  --panel: 222 34% 10%;
+  --panel-strong: 221 30% 14%;
+  --lime-signal: 83 72% 58%;
+  --violet-signal: 260 54% 62%;
+  --red-signal: 356 72% 60%;
+
+  /* Dynamic gradient — JS updates these via IntersectionObserver */
+  --grad-accent-h: 260;
+  --grad-accent-s: 54%;
+  --grad-accent-l: 62%;
+  --grad-accent-opacity: 0.14;
+  --grad-secondary-h: 83;
+  --grad-secondary-s: 72%;
+  --grad-secondary-l: 58%;
+  --grad-secondary-opacity: 0.08;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(
+      circle at 14% 12%,
+      hsla(var(--grad-accent-h), var(--grad-accent-s), var(--grad-accent-l), var(--grad-accent-opacity)),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 88% 8%,
+      hsla(var(--grad-secondary-h), var(--grad-secondary-s), var(--grad-secondary-l), var(--grad-secondary-opacity)),
+      transparent 24rem
+    ),
+    linear-gradient(135deg, #080c14 0%, #0c111d 46%, #0f131c 100%);
+  color: hsl(var(--foreground));
+  font-family: Satoshi, Geist, Aptos, "Segoe UI", sans-serif;
+  transition: background 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  content: "";
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23noise)' opacity='0.65'/%3E%3C/svg%3E");
+}
+
+button,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(181, 226, 74, 0.28);
+  color: #f8fafc;
+}
+
+/* ── Glass panel ──────────────────────────────────── */
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(12, 17, 29, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 80px -48px rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(18px);
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.35s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(14, 20, 34, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 24px 80px -40px rgba(0, 0, 0, 0.92),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* ── Hover utilities ──────────────────────────────── */
+
+.hover-lift {
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px) scale(1.005);
+}
+
+.hover-glow-lime:hover {
+  box-shadow:
+    0 8px 32px -8px rgba(181, 226, 74, 0.18),
+    inset 0 1px 0 rgba(181, 226, 74, 0.12);
+}
+
+.hover-glow-violet:hover {
+  box-shadow:
+    0 8px 32px -8px rgba(124, 92, 255, 0.22),
+    inset 0 1px 0 rgba(124, 92, 255, 0.12);
+}
+
+.hover-glow-red:hover {
+  box-shadow:
+    0 8px 32px -8px rgba(226, 87, 101, 0.20),
+    inset 0 1px 0 rgba(226, 87, 101, 0.12);
+}
+
+.hover-glow-neutral:hover {
+  box-shadow:
+    0 8px 32px -8px rgba(148, 163, 184, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ── Metric numbers ────────────────────────────────── */
+
+.metric-number {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── KPI Popover ───────────────────────────────────── */
+
+.kpi-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  width: min(22rem, calc(100vw - 2rem));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.625rem;
+  background: rgba(14, 19, 32, 0.96);
+  box-shadow:
+    0 20px 64px -16px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px);
+  animation: popover-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Section nav (minimap) ─────────────────────────── */
+
+.section-nav-dot {
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.section-nav-dot[data-active="true"] {
+  transform: scale(1.45);
+}
+
+.section-nav-line {
+  transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Metric bar hover ──────────────────────────────── */
+
+.metric-bar-row {
+  transition: background 0.2s ease;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  margin: -0.375rem -0.5rem;
+}
+
+.metric-bar-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.metric-bar-fill {
+  transition:
+    width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.metric-bar-row:hover .metric-bar-fill {
+  filter: brightness(1.15);
+}
+
+.metric-bar-fill-lime {
+  background: hsl(var(--lime-signal));
+}
+.metric-bar-row:hover .metric-bar-fill-lime {
+  box-shadow: 0 0 10px rgba(181, 226, 74, 0.35);
+}
+
+.metric-bar-fill-violet {
+  background: hsl(var(--violet-signal));
+}
+.metric-bar-row:hover .metric-bar-fill-violet {
+  box-shadow: 0 0 10px rgba(124, 92, 255, 0.35);
+}
+
+.metric-bar-fill-red {
+  background: hsl(var(--red-signal));
+}
+.metric-bar-row:hover .metric-bar-fill-red {
+  box-shadow: 0 0 10px rgba(226, 87, 101, 0.35);
+}
+
+/* ── Sticky executive bar ──────────────────────────── */
+
+.executive-bar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 12, 20, 0.88);
+  backdrop-filter: blur(20px);
+  animation: bar-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bar-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Map controls hide ─────────────────────────────── */
+
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  display: none;
+}
