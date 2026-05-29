@@ -1,23 +1,22 @@
 import * as React from "react";
-import { BarChart3, FileText, Menu, Presentation, Sparkles } from "lucide-react";
+import { BarChart3, ListChecks, Menu, Sparkles } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Sheet } from "./components/ui/sheet";
 import { cn } from "./lib/utils";
 import { DashboardView } from "./views/DashboardView";
-import { DocumentationView } from "./views/DocumentationView";
 import { PresentationView } from "./views/PresentationView";
 
-type ViewId = "dashboard" | "documentacao" | "apresentacao";
+type ViewId = "dashboard" | "etapas";
 
 const navItems: Array<{ id: ViewId; label: string; helper: string; icon: typeof BarChart3 }> = [
-  { id: "dashboard", label: "Dashboard", helper: "KPIs e analises", icon: BarChart3 },
-  { id: "documentacao", label: "Documentacao", helper: "Etapas e decisoes", icon: FileText },
-  { id: "apresentacao", label: "Apresentacao Visual", helper: "Jornada oral", icon: Presentation },
+  { id: "dashboard", label: "Dashboard", helper: "KPIs e análises", icon: BarChart3 },
+  { id: "etapas", label: "Etapas", helper: "Roteiro do projeto", icon: ListChecks },
 ];
 
 function getHashView(): ViewId {
   const hash = window.location.hash.replace("#", "");
-  if (hash === "documentacao" || hash === "apresentacao" || hash === "dashboard") return hash;
+  if (hash === "documentacao" || hash === "apresentacao") return "etapas";
+  if (hash === "etapas" || hash === "dashboard") return hash;
   return "dashboard";
 }
 
@@ -63,7 +62,7 @@ function Sidebar({ current, onNavigate }: { current: ViewId; onNavigate: (view: 
       <div className="mt-auto rounded-md border border-white/10 bg-white/[0.045] p-3">
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Base</p>
         <p className="mt-2 text-sm text-white">dados_empresa_tratado.csv</p>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Aplicacao estatica com filtros em memoria.</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Aplicação estática com filtros em memória.</p>
       </div>
     </div>
   );
@@ -92,7 +91,7 @@ export default function App() {
         <Sidebar current={view} onNavigate={navigate} />
       </aside>
 
-      <Sheet open={menuOpen} onOpenChange={setMenuOpen} title="Navegacao">
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen} title="Navegação">
         <Sidebar current={view} onNavigate={navigate} />
       </Sheet>
 
@@ -111,8 +110,7 @@ export default function App() {
 
         <div className="mx-auto max-w-[1480px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
           {view === "dashboard" ? <DashboardView /> : null}
-          {view === "documentacao" ? <DocumentationView /> : null}
-          {view === "apresentacao" ? <PresentationView /> : null}
+          {view === "etapas" ? <PresentationView /> : null}
         </div>
       </main>
     </div>

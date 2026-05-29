@@ -109,8 +109,8 @@ export function GithubSalesCalendar({ rows, year = 2024 }: GithubSalesCalendarPr
     <Card className="glass-panel">
       <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <CardTitle>Calendario anual de vendas</CardTitle>
-          <CardDescription>Intensidade por receita diaria em 2024, respeitando os filtros globais.</CardDescription>
+          <CardTitle>Calendário anual de vendas</CardTitle>
+          <CardDescription>Intensidade por receita diária em 2024, respeitando os filtros globais.</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Tabs items={quarterTabs} value={view} onValueChange={(value) => setView(value as PeriodFilter)} />
@@ -125,9 +125,9 @@ export function GithubSalesCalendar({ rows, year = 2024 }: GithubSalesCalendarPr
         <div className="px-5 pb-3">
           <ReadingPanel
             reading={{
-              sobre: "Cada quadrado representa um dia do ano. A cor fica mais intensa quando a receita diaria e maior dentro do recorte filtrado.",
-              comoAnalisar: "Use os trimestres para procurar concentracao de vendas, dias sem movimento e picos que podem distorcer a leitura mensal.",
-              insight: "Picos isolados ajudam a explicar variacao de receita, mas nao comprovam melhora operacional sem cruzar lucro, margem e meta.",
+              sobre: "Cada quadrado representa um dia do ano. A cor fica mais intensa quando a receita diária é maior dentro do recorte filtrado.",
+              comoAnalisar: "Use os trimestres para procurar concentração de vendas, dias sem movimento e picos que podem distorcer a leitura mensal.",
+              insight: "Picos isolados ajudam a explicar variação de receita, mas não comprovam melhora operacional sem cruzar lucro, margem e meta.",
             }}
           />
         </div>
