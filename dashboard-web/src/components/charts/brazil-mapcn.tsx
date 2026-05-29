@@ -6,6 +6,7 @@ import { buildBrazilGeoJson } from "../../data/brazil-geo";
 import { formatCompactBRL, formatNumber, formatPercent } from "../../lib/format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Tabs } from "../ui/tabs";
+import { ReadingIconButton, ReadingPanel } from "../dashboard/reading-disclosure";
 
 interface BrazilMapcnProps {
   regionStats: RegionMetric[];
@@ -25,7 +26,9 @@ const metricTabs: Array<{ value: MapMetric; label: string }> = [
 export function BrazilMapcn({ regionStats, metric, onMetricChange, activeRegion, onRegionHover }: BrazilMapcnProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const mapRef = React.useRef<maplibregl.Map | null>(null);
+  const [readingOpen, setReadingOpen] = React.useState(false);
   const data = React.useMemo(() => buildBrazilGeoJson(regionStats, metric) as GeoJSON.FeatureCollection, [regionStats, metric]);
+  const metricLabel = metricTabs.find((item) => item.value === metric)?.label ?? "metrica";
 
   // Keep hover handler updated in a ref so map event listener doesn't trigger map recreation
   const hoverRef = React.useRef(onRegionHover);
@@ -222,8 +225,26 @@ export function BrazilMapcn({ regionStats, metric, onMetricChange, activeRegion,
           <CardTitle>Mapa regional do Brasil</CardTitle>
           <CardDescription>Estados simplificados em GeoJSON, coloridos pela metrica selecionada.</CardDescription>
         </div>
-        <Tabs items={metricTabs} value={metric} onValueChange={(value) => onMetricChange(value as MapMetric)} />
+        <div className="flex items-center gap-2">
+          <Tabs items={metricTabs} value={metric} onValueChange={(value) => onMetricChange(value as MapMetric)} />
+          <ReadingIconButton
+            open={readingOpen}
+            ariaLabel="Ver leitura do mapa regional"
+            onClick={() => setReadingOpen((current) => !current)}
+          />
+        </div>
       </CardHeader>
+      {readingOpen ? (
+        <div className="px-5 pb-3">
+          <ReadingPanel
+            reading={{
+              sobre: `O mapa colore os estados pela metrica selecionada (${metricLabel}) e agrupa a leitura por regiao brasileira.`,
+              comoAnalisar: "Use a cor para localizar concentracao geografica e passe o mouse sobre o mapa para focar o resumo da regiao ao lado.",
+              insight: "Diferenca regional pequena deve ser tratada como sinal de investigacao, nao como prova de superioridade operacional.",
+            }}
+          />
+        </div>
+      ) : null}
       <CardContent className="relative pt-0">
         <div className="relative">
           <div ref={containerRef} className="h-[25rem] overflow-hidden rounded-md border border-white/10 bg-slate-950/20" />

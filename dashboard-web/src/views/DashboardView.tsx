@@ -35,6 +35,7 @@ import { ChartTooltipContent, ScatterSaleTooltip } from "../components/charts/ch
 import { GithubSalesCalendar } from "../components/charts/github-sales-calendar";
 import { MetricBarList } from "../components/charts/metric-bar-list";
 import { KpiCard, type KpiReading } from "../components/dashboard/kpi-card";
+import { ReadingIconButton, ReadingPanel, ReadingPopover, type ReadingContent } from "../components/dashboard/reading-disclosure";
 import { SectionHeader } from "../components/dashboard/section-header";
 import { SectionNav, useActiveSection, type NavSection } from "../components/dashboard/section-nav";
 import { Badge } from "../components/ui/badge";
@@ -44,7 +45,7 @@ import { Progress } from "../components/ui/progress";
 import { Select } from "../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Tabs } from "../components/ui/tabs";
-import { outputTables, salesRows } from "../data/catalog";
+import { salesRows } from "../data/catalog";
 import type { DimensionMetric, KpiSummary, MapMetric, SalesFilters } from "../data/types";
 import {
   aggregateBy,
@@ -122,21 +123,6 @@ type KpiDefinition = {
   reading: KpiReading;
 };
 
-/* ─── CSV key resolver (handles encoding-corrupted headers) ── */
-
-function csvVal(obj: Record<string, string>, ...candidates: string[]): string {
-  for (const key of candidates) {
-    if (key in obj) return obj[key];
-  }
-  // Fuzzy fallback: find first key containing any candidate as substring
-  const keys = Object.keys(obj);
-  for (const cand of candidates) {
-    const found = keys.find((k) => k.toLowerCase().includes(cand.toLowerCase()));
-    if (found) return obj[found];
-  }
-  return "";
-}
-
 /* ─── Helpers ───────────────────────────────────────────────── */
 
 const trendMetricNames: Record<string, string> = {
@@ -150,17 +136,30 @@ function tooltipNumber(value: string | number | Array<string | number>) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function defaultChartReading(title: string, description: string): ReadingContent {
+  return {
+    sobre: description,
+    comoAnalisar: `Leia ${title} pela ordem dos valores, pelo tamanho relativo das barras/linhas e pelos detalhes do tooltip ou rodape.`,
+    insight: "Use o grafico como triagem. Quando a diferenca for pequena, trate como sinal para investigar antes de assumir que um grupo e claramente melhor.",
+  };
+}
+
 function ChartShell({
   title,
   description,
   children,
   action,
+  reading,
 }: {
   title: string;
   description: string;
   children: React.ReactNode;
   action?: React.ReactNode;
+  reading?: ReadingContent;
 }) {
+  const [readingOpen, setReadingOpen] = React.useState(false);
+  const chartReading = reading ?? defaultChartReading(title, description);
+
   return (
     <Card className="glass-panel">
       <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -168,8 +167,20 @@ function ChartShell({
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </div>
-        {action}
+        <div className="flex items-center gap-2">
+          {action}
+          <ReadingIconButton
+            open={readingOpen}
+            ariaLabel={`Ver leitura do grafico ${title}`}
+            onClick={() => setReadingOpen((current) => !current)}
+          />
+        </div>
       </CardHeader>
+      {readingOpen ? (
+        <div className="px-5 pb-3">
+          <ReadingPanel reading={chartReading} />
+        </div>
+      ) : null}
       <CardContent>{children}</CardContent>
     </Card>
   );
@@ -188,19 +199,41 @@ function ContextCard({
   helper: string;
   tone?: "lime" | "violet" | "red" | "neutral";
 }) {
+  const [readingOpen, setReadingOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
   const toneClass = {
     lime: "border-lime-signal/25 bg-lime-signal/10 text-lime-signal",
     violet: "border-violet-signal/30 bg-violet-signal/14 text-violet-100",
     red: "border-red-signal/25 bg-red-signal/12 text-red-100",
     neutral: "border-white/10 bg-white/[0.055] text-slate-200",
   }[tone];
+  const reading = {
+    sobre: `${label}: ${title}. O valor exibido e ${value}.`,
+    comoAnalisar: "Use este card como leitura resumida do recorte atual e compare com os rankings ou graficos da mesma secao.",
+    insight: helper || "Sem detalhe adicional para o filtro atual.",
+  };
 
   return (
-    <Card className="h-full p-4">
-      <div className={cn("inline-flex rounded-md border px-2 py-1 text-[11px] font-medium", toneClass)}>{label}</div>
+    <Card className="h-full overflow-visible p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className={cn("inline-flex rounded-md border px-2 py-1 text-[11px] font-medium", toneClass)}>{label}</div>
+        <ReadingIconButton
+          ref={triggerRef}
+          open={readingOpen}
+          ariaLabel={`Ver leitura do KPI ${label}`}
+          className="h-7 w-7"
+          onClick={() => setReadingOpen((current) => !current)}
+        />
+      </div>
       <p className="mt-4 text-sm font-medium text-slate-200">{title}</p>
       <p className="metric-number mt-2 text-2xl font-semibold tracking-tight text-white">{value}</p>
       <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{helper}</p>
+      <ReadingPopover
+        anchorRef={triggerRef}
+        open={readingOpen}
+        reading={reading}
+        onClose={() => setReadingOpen(false)}
+      />
     </Card>
   );
 }
@@ -213,7 +246,7 @@ function formatLeaderHelper(metric: DimensionMetric | undefined) {
 function InsightCallout({ text }: { text: string }) {
   return (
     <div className="rounded-lg border border-cyan-500/20 bg-cyan-950/10 p-4 text-sm text-cyan-200">
-      <strong className="block text-white mb-1">💡 Conclusão Analítica:</strong>
+      <strong className="block text-white mb-1">Conclusao analitica:</strong>
       {text}
     </div>
   );
@@ -223,6 +256,279 @@ const rankingTabItems = [
   { value: "product", label: "Produto" },
   { value: "category", label: "Categoria" },
 ];
+
+const requestedActionPlanRows = [
+  {
+    problema: "Baixo atingimento de metas",
+    evidencia: "Apenas 7,00% das vendas atingiram meta",
+    impacto: "Dificulta avaliação comercial",
+    recomendacao: "Recalibrar metas por região, canal, produto e vendedor",
+    prioridade: "Alta",
+  },
+  {
+    problema: "Descontos elevados reduzem margem",
+    evidencia: "Margem cai de 29,97% para 9,19%",
+    impacto: "Reduz rentabilidade",
+    recomendacao: "Criar política formal de descontos",
+    prioridade: "Alta",
+  },
+  {
+    problema: "Vendas com prejuízo",
+    evidencia: "123 vendas com lucro negativo",
+    impacto: "Gera perda financeira",
+    recomendacao: "Criar alerta ou bloqueio para margem negativa",
+    prioridade: "Alta",
+  },
+  {
+    problema: "Alta taxa de atrasos",
+    evidencia: "51,90% das entregas atrasadas",
+    impacto: "Afeta operação e experiência do cliente",
+    recomendacao: "Monitorar atraso por canal, região e produto",
+    prioridade: "Alta",
+  },
+  {
+    problema: "Centro-Oeste com baixa margem",
+    evidencia: "Margem de 17,97%",
+    impacto: "Alto faturamento com baixa eficiência",
+    recomendacao: "Revisar descontos, produtos e custos da região",
+    prioridade: "Média",
+  },
+  {
+    problema: "Produtos de alta receita com baixa margem",
+    evidencia: "Monitor lidera receita, mas tem margem baixa",
+    impacto: "Pode distorcer decisões comerciais",
+    recomendacao: "Priorizar produtos com maior margem",
+    prioridade: "Média",
+  },
+  {
+    problema: "Avaliação focada só em receita",
+    evidencia: "Vendedores com mais receita não são sempre os mais rentáveis",
+    impacto: "Incentiva vendas pouco lucrativas",
+    recomendacao: "Avaliar vendedores por lucro, margem e desconto",
+    prioridade: "Média",
+  },
+];
+
+const strategicRecommendations = [
+  {
+    title: "14.1 Revisar a política de descontos",
+    body:
+      "A empresa deve criar regras claras para concessão de descontos, especialmente acima de 15%, pois os dados mostram queda expressiva da margem em faixas de desconto mais altas.",
+  },
+  {
+    title: "14.2 Criar controle para vendas com lucro negativo",
+    body:
+      "Vendas com prejuízo devem ser bloqueadas ou submetidas à aprovação gerencial. Isso evita que a empresa aumente faturamento, mas reduza lucro.",
+  },
+  {
+    title: "14.3 Recalibrar metas comerciais",
+    body:
+      "A baixa taxa de atingimento de meta indica que os objetivos comerciais precisam ser revistos. As metas devem considerar região, canal, produto, vendedor, histórico e margem.",
+  },
+  {
+    title: "14.4 Monitorar atrasos como KPI estratégico",
+    body:
+      "A taxa de atraso de 51,90% é muito elevada. A entrega deve ser acompanhada como parte da estratégia de negócio, e não apenas como operação logística.",
+  },
+  {
+    title: "14.5 Replicar boas práticas da região Sul",
+    body:
+      "A região Sul apresentou o melhor desempenho financeiro. Suas práticas comerciais devem ser estudadas e adaptadas para outras regiões.",
+  },
+  {
+    title: "14.6 Reforçar produtos de maior margem",
+    body:
+      "Produtos como Notebook, Impressora e Teclado devem receber atenção estratégica, pois apresentam margens superiores.",
+  },
+  {
+    title: "14.7 Avaliar vendedores por rentabilidade",
+    body:
+      "A empresa deve criar rankings comerciais que considerem receita, lucro, margem, desconto médio, taxa de meta e vendas com prejuízo. Isso evita premiar apenas o volume de faturamento.",
+  },
+];
+
+type DiscountBandMetric = {
+  name: string;
+  avgProfit: number;
+  avgMargin: number;
+  sales: number;
+};
+
+type SellerDiagnostic = {
+  seller: DimensionMetric;
+  score: number;
+  priority: "Alta" | "Media" | "Baixa";
+  issues: string[];
+  strengths: string[];
+};
+
+function formatPp(value: number, digits = 1) {
+  return `${formatDecimal(Math.abs(value) * 100, digits)} p.p.`;
+}
+
+function gapLabel(value: number) {
+  const gap = Math.abs(value);
+  if (gap < 0.01) return "muito pequena";
+  if (gap < 0.03) return "leve";
+  if (gap < 0.06) return "moderada";
+  return "relevante";
+}
+
+function correlationLabel(value: number) {
+  const abs = Math.abs(value);
+  if (abs < 0.15) return "fraca";
+  if (abs < 0.35) return "moderada";
+  return "forte";
+}
+
+function rankOf(items: DimensionMetric[], name: string) {
+  const index = items.findIndex((item) => item.name === name);
+  return index >= 0 ? index + 1 : null;
+}
+
+function buildOverviewInsight(summary: KpiSummary) {
+  return `No recorte atual, a empresa soma ${formatCompactBRL(summary.revenue)} de receita, ${formatCompactBRL(summary.profit)} de lucro e margem de ${formatPercent(summary.margin)}. O ponto mais claro nao e falta de faturamento, e sim consistencia: ${formatPercent(summary.goalHitRate)} das vendas bateram meta individual e ${formatPercent(summary.delayRate)} ficaram atrasadas. A leitura recomenda ajustar meta, margem e atraso em conjunto, sem concluir causa operacional direta sem uma base de custos logisticos.`;
+}
+
+function buildRegionInsight(regions: DimensionMetric[]) {
+  if (!regions.length) return "Sem dados regionais para o filtro atual.";
+  const revenueLeader = [...regions].sort((a, b) => b.revenue - a.revenue)[0];
+  const bestMargin = [...regions].sort((a, b) => b.margin - a.margin)[0];
+  const worstMargin = [...regions].sort((a, b) => a.margin - b.margin)[0];
+  const marginGap = bestMargin.margin - worstMargin.margin;
+
+  return `${revenueLeader.name} lidera a receita no recorte (${formatCompactBRL(revenueLeader.revenue)}). Em margem, ${bestMargin.name} aparece melhor (${formatPercent(bestMargin.margin)}) e ${worstMargin.name} fica no menor ponto (${formatPercent(worstMargin.margin)}), uma diferenca ${gapLabel(marginGap)} de ${formatPp(marginGap)}. A conclusao correta e investigar preco, mix e desconto nas regioes de menor margem, nao assumir uma reestruturacao ampla sem evidencias adicionais.`;
+}
+
+function buildProductInsight(productsByProfit: DimensionMetric[], productsByMargin: DimensionMetric[], categoriesByProfit: DimensionMetric[]) {
+  if (!productsByProfit.length || !productsByMargin.length || !categoriesByProfit.length) return "Sem dados de produto para o filtro atual.";
+  const profitLeader = productsByProfit[0];
+  const marginLeader = productsByMargin[0];
+  const categoryLeader = categoriesByProfit[0];
+  const sameProduct = profitLeader.name === marginLeader.name;
+
+  return `${profitLeader.name} lidera o lucro total (${formatCompactBRL(profitLeader.profit)}) e ${categoryLeader.name} e a categoria com maior contribuicao financeira. ${sameProduct ? "O mesmo produto tambem lidera margem, reforcando prioridade comercial." : `${marginLeader.name} tem a maior margem (${formatPercent(marginLeader.margin)}), mostrando que lucro absoluto e eficiencia percentual nao sao a mesma coisa.`} A decisao deve combinar lucro, margem e volume antes de alterar campanhas ou estoque.`;
+}
+
+function buildChannelInsight(online?: DimensionMetric, store?: DimensionMetric) {
+  if (!online || !store) return "Sem comparacao completa entre Online e Loja para o filtro atual.";
+  const revenueLeader = online.revenue >= store.revenue ? online : store;
+  const profitLeader = online.profit >= store.profit ? online : store;
+  const marginLeader = online.margin >= store.margin ? online : store;
+  const delayLeader = online.delayRate <= store.delayRate ? online : store;
+  const marginGap = online.margin - store.margin;
+  const delayGap = online.delayRate - store.delayRate;
+
+  return `${revenueLeader.name} lidera receita e ${profitLeader.name} lidera lucro no recorte. A diferenca de margem entre Online e Loja e ${gapLabel(marginGap)} (${formatPp(marginGap)}), enquanto a diferenca de atraso e ${gapLabel(delayGap)} (${formatPp(delayGap)}). Assim, ${marginLeader.name} pode ser tratado como referencia de eficiencia percentual e ${delayLeader.name} como melhor referencia operacional, mas a recomendacao deve preservar a distincao entre escala e margem.`;
+}
+
+function buildSellerInsight(sellersByProfit: DimensionMetric[], sellersByRevenue: DimensionMetric[], sellersByTarget: DimensionMetric[]) {
+  if (!sellersByProfit.length) return "Sem dados de vendedores para o filtro atual.";
+  const profitLeader = sellersByProfit[0];
+  const revenueLeader = sellersByRevenue[0] ?? profitLeader;
+  const targetLeader = sellersByTarget[0] ?? profitLeader;
+
+  return `${profitLeader.name} lidera lucro (${formatCompactBRL(profitLeader.profit)}), ${revenueLeader.name} lidera receita (${formatCompactBRL(revenueLeader.revenue)}) e ${targetLeader.name} lidera cumprimento de meta (${formatPercent(targetLeader.targetCompletion)}). Como os lideres podem mudar conforme a metrica, a avaliacao comercial deve separar conversa de volume, rentabilidade, desconto e meta. O painel de one-on-one abaixo prioriza vendedores por gargalos relativos ao time no filtro atual.`;
+}
+
+function buildClientInsight(clientTypesByRevenue: DimensionMetric[], clientTypesByProfit: DimensionMetric[]) {
+  if (!clientTypesByRevenue.length || !clientTypesByProfit.length) return "Sem dados de tipo de cliente para o filtro atual.";
+  const revenueLeader = clientTypesByRevenue[0];
+  const profitLeader = clientTypesByProfit[0];
+  const bestMargin = [...clientTypesByProfit].sort((a, b) => b.margin - a.margin)[0];
+  const marginGap = bestMargin.margin - revenueLeader.margin;
+
+  return `${revenueLeader.name} lidera receita (${formatCompactBRL(revenueLeader.revenue)}) e ${profitLeader.name} lidera lucro (${formatCompactBRL(profitLeader.profit)}). ${bestMargin.name} tem a melhor margem (${formatPercent(bestMargin.margin)}), com diferenca ${gapLabel(marginGap)} de ${formatPp(marginGap)} frente ao lider de receita. A leitura correta e equilibrar retencao e aquisicao, sem afirmar que um perfil e muito superior quando a margem estiver proxima.`;
+}
+
+function buildDiscountInsight(summary: KpiSummary, correlation: number, bands: DiscountBandMetric[]) {
+  const highBand = bands.find((band) => band.name === "Mais de 20%");
+  const lowBand = bands.find((band) => band.name === "0.1% a 5%") ?? bands.find((band) => band.name === "Sem Desconto");
+  const marginGap = lowBand && highBand ? lowBand.avgMargin / 100 - highBand.avgMargin / 100 : 0;
+
+  return `A correlacao desconto x margem e ${formatDecimal(correlation, 2)} (${correlationLabel(correlation)}). O desconto medio do recorte e ${formatPercent(summary.averageDiscount)} e ha ${formatNumber(summary.negativeProfitSales)} vendas com lucro negativo. ${lowBand && highBand ? `Entre ${lowBand.name} e ${highBand.name}, a diferenca de margem media e ${gapLabel(marginGap)} (${formatPp(marginGap)}).` : "As faixas devem ser lidas junto com volume de vendas."} Isso aponta necessidade de regra de aprovacao, mas sem exagerar: desconto maior reduz margem quando nao vem compensado por mix, preco ou volume rentavel.`;
+}
+
+function buildDeliveryInsight(delivery: DimensionMetric[]) {
+  if (!delivery.length) return "Sem dados logisticos para o filtro atual.";
+  const delayed = delivery.find((item) => item.name.toLowerCase().includes("atras"));
+  const onTime = delivery.find((item) => !item.name.toLowerCase().includes("atras"));
+  if (!delayed || !onTime) return "A leitura de atraso precisa de pelo menos dois status de entrega no filtro atual.";
+  const marginGap = onTime.margin - delayed.margin;
+  const targetGap = onTime.targetCompletion - delayed.targetCompletion;
+
+  return `Entregas atrasadas mostram margem de ${formatPercent(delayed.margin)} contra ${formatPercent(onTime.margin)} nas entregas no prazo, diferenca ${gapLabel(marginGap)} de ${formatPp(marginGap)}. Em cumprimento de meta, a diferenca e ${gapLabel(targetGap)} (${formatPp(targetGap)}). Isso sustenta tratar atraso como indicador de acompanhamento; nao sustenta afirmar sozinho que devolucoes ou custos logisticos reduzem margem sem uma tabela especifica de custos operacionais.`;
+}
+
+function buildBrandInsight(brands: DimensionMetric[], productLines: DimensionMetric[], summary: KpiSummary) {
+  if (!brands.length || !productLines.length) return "Sem dados de marca ou linha para o filtro atual.";
+  const brandLeader = brands[0];
+  const lineLeader = productLines[0];
+  const brandShare = summary.profit ? brandLeader.profit / summary.profit : 0;
+  const lineShare = summary.profit ? lineLeader.profit / summary.profit : 0;
+
+  return `${brandLeader.name} lidera lucro por marca (${formatCompactBRL(brandLeader.profit)}, ${formatPercent(brandShare)} do lucro do recorte) e ${lineLeader.name} lidera por linha (${formatCompactBRL(lineLeader.profit)}, ${formatPercent(lineShare)}). A concentracao existe se a participacao for alta, mas a acao correta e proteger os itens rentaveis e revisar os de baixa margem antes de reduzir espaco comercial.`;
+}
+
+function buildSellerDiagnostics(sellers: DimensionMetric[], team: KpiSummary): SellerDiagnostic[] {
+  if (!sellers.length) return [];
+  const avgProfitPerSeller = team.profit / sellers.length;
+
+  return sellers
+    .map((seller) => {
+      const issues: string[] = [];
+      const strengths: string[] = [];
+      let score = 0;
+
+      if (seller.margin + 0.02 < team.margin) {
+        score += 2;
+        issues.push(`Margem de ${formatPercent(seller.margin)} fica ${formatPp(team.margin - seller.margin)} abaixo da media do recorte (${formatPercent(team.margin)}). Revisar mix vendido, preco e excecoes de desconto.`);
+      }
+      if (seller.averageDiscount > team.averageDiscount + 0.01) {
+        score += 1;
+        issues.push(`Desconto medio de ${formatPercent(seller.averageDiscount)} esta acima da media (${formatPercent(team.averageDiscount)}). Validar justificativas comerciais e limites de aprovacao.`);
+      }
+      if (seller.targetCompletion + 0.03 < team.targetCompletion) {
+        score += 2;
+        issues.push(`Cumprimento de meta de ${formatPercent(seller.targetCompletion)} abaixo do recorte (${formatPercent(team.targetCompletion)}). Quebrar pipeline por produto, canal e tamanho de venda.`);
+      }
+      if (seller.delayRate > team.delayRate + 0.05) {
+        score += 1;
+        issues.push(`Taxa de atraso de ${formatPercent(seller.delayRate)} acima do recorte (${formatPercent(team.delayRate)}). Checar promessa de prazo, regiao e canal das vendas.`);
+      }
+      if (seller.negativeProfitSales > 0) {
+        score += Math.min(3, seller.negativeProfitSales);
+        issues.push(`${formatNumber(seller.negativeProfitSales)} vendas com lucro negativo. Rever casos antes da proxima rodada de metas.`);
+      }
+
+      if (seller.margin >= team.margin + 0.02) {
+        strengths.push(`Margem ${formatPp(seller.margin - team.margin)} acima da media do recorte.`);
+      }
+      if (seller.profit >= avgProfitPerSeller) {
+        strengths.push(`Lucro acima da media por vendedor (${formatCompactBRL(avgProfitPerSeller)}).`);
+      }
+      if (seller.targetCompletion >= team.targetCompletion + 0.03) {
+        strengths.push("Cumprimento de meta acima da media do recorte.");
+      }
+      if (!strengths.length) {
+        strengths.push("Sem destaque positivo claro no recorte; procurar boas praticas qualitativas na conversa.");
+      }
+      if (!issues.length) {
+        issues.push("Sem gargalo quantitativo evidente. Use o one-on-one para documentar praticas replicaveis e riscos pontuais.");
+      }
+
+      const priority: SellerDiagnostic["priority"] = score >= 5 ? "Alta" : score >= 2 ? "Media" : "Baixa";
+
+      return {
+        seller,
+        score,
+        priority,
+        issues,
+        strengths,
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.seller.profit - b.seller.profit);
+}
 
 /* ─── KPI builder ───────────────────────────────────────────── */
 
@@ -371,6 +677,7 @@ export function DashboardView() {
   const [mapMetric, setMapMetric] = React.useState<MapMetric>("receita");
   const [activeRegion, setActiveRegion] = React.useState<string | null>(null);
   const [showExecBar, setShowExecBar] = React.useState(false);
+  const [selectedSeller, setSelectedSeller] = React.useState("");
 
   // States for P2 Product/Category Rankings
   const [rank1Tab, setRank1Tab] = React.useState<"product" | "category">("product");
@@ -425,9 +732,10 @@ export function DashboardView() {
   const categoriesByQuantity = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.category), "quantity"), [filteredRows]);
 
   // P4 — Sellers
-  const sellersByProfit = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.seller), "profit"), [filteredRows]);
-  const sellersByRevenue = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.seller), "revenue"), [filteredRows]);
-  const sellersByTarget = React.useMemo(() => [...aggregateBy(filteredRows, (row) => row.seller)].sort((a, b) => b.targetCompletion - a.targetCompletion), [filteredRows]);
+  const sellerMetrics = React.useMemo(() => aggregateBy(filteredRows, (row) => row.seller), [filteredRows]);
+  const sellersByProfit = React.useMemo(() => sortMetrics(sellerMetrics, "profit"), [sellerMetrics]);
+  const sellersByRevenue = React.useMemo(() => sortMetrics(sellerMetrics, "revenue"), [sellerMetrics]);
+  const sellersByTarget = React.useMemo(() => [...sellerMetrics].sort((a, b) => b.targetCompletion - a.targetCompletion), [sellerMetrics]);
 
   // P5 — Client type
   const clientTypesByProfit = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.clientType), "profit"), [filteredRows]);
@@ -474,6 +782,31 @@ export function DashboardView() {
   // P8 — Brands and product lines
   const brands = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.brand), "profit"), [filteredRows]);
   const productLines = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.productLine), "profit"), [filteredRows]);
+
+  const sellerDiagnostics = React.useMemo(() => buildSellerDiagnostics(sellerMetrics, summary), [sellerMetrics, summary]);
+  const sellerOptions = React.useMemo(
+    () => sellerMetrics.map((seller) => ({ value: seller.name, label: seller.name })).sort((a, b) => a.label.localeCompare(b.label, "pt-BR")),
+    [sellerMetrics],
+  );
+  const defaultSeller = sellerDiagnostics[0]?.seller.name ?? "";
+
+  React.useEffect(() => {
+    if (!sellerDiagnostics.length) return;
+    if (!sellerDiagnostics.some((diagnostic) => diagnostic.seller.name === selectedSeller)) {
+      setSelectedSeller(defaultSeller);
+    }
+  }, [defaultSeller, selectedSeller, sellerDiagnostics]);
+
+  const currentSellerDiagnostic =
+    sellerDiagnostics.find((diagnostic) => diagnostic.seller.name === selectedSeller) ?? sellerDiagnostics[0];
+  const currentSeller = currentSellerDiagnostic?.seller;
+  const currentSellerRanks = currentSeller
+    ? {
+        profit: rankOf(sellersByProfit, currentSeller.name),
+        revenue: rankOf(sellersByRevenue, currentSeller.name),
+        target: rankOf(sellersByTarget, currentSeller.name),
+      }
+    : null;
 
   const channelOptions = React.useMemo(
     () => [{ value: "all", label: "Todos os canais" }, ...uniqueValues(salesRows, (row) => row.channel).map((value) => ({ value, label: value }))],
@@ -597,7 +930,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p0"]}
         />
 
-        <InsightCallout text="No consolidado de 2024, a Comercial Insight apresenta receita e lucro saudáveis. No entanto, o cumprimento individual de metas de vendas é de apenas 7,1%, e a taxa de atraso logístico ultrapassa 51%, indicando que a operação comercial e a logística de entregas precisam de séria reestruturação." />
+        <InsightCallout text={buildOverviewInsight(summary)} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {["revenue", "profit", "margin", "quantity", "ticket"].map((key) => (
@@ -661,7 +994,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p1"]}
         />
 
-        <InsightCallout text="A região Sudeste lidera amplamente em faturamento bruto (Receita), mas o Sul é a referência em eficiência operacional (maior Margem de Lucro). O Centro-Oeste opera como alerta máximo devido à menor margem, demandando auditoria imediata de preços e custos, enquanto o Norte e o Nordeste concentram os piores gargalos logísticos." />
+        <InsightCallout text={buildRegionInsight(regions)} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <ContextCard
@@ -746,7 +1079,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p2"]}
         />
 
-        <InsightCallout text="Os produtos de informática (computadores e celulares) lideram o faturamento e o lucro absoluto. No entanto, categorias de menor volume físico demonstram maior rentabilidade percentual (margem), provando que a empresa depende de produtos eletrônicos de alto giro e baixa margem para gerar volume, mas necessita de mix complementar para proteger o resultado líquido." />
+        <InsightCallout text={buildProductInsight(productsByProfit, productsByMargin, categoriesByProfit)} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <ContextCard
@@ -862,7 +1195,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p3"]}
         />
 
-        <InsightCallout text="O canal Online supera as lojas físicas em lucro total, receita, cumprimento de metas e volume de transações. No entanto, a Loja física atua com uma margem de lucro percentual superior e apresenta menor taxa de atrasos na entrega, demonstrando que a operação física é mais rentável por venda e mais confiável logisticamente, enquanto o e-commerce oferece escalabilidade comercial." />
+        <InsightCallout text={buildChannelInsight(onlineMetric, storeMetric)} />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Card className="glass-panel border-cyan-500/20 bg-cyan-950/10 p-5">
@@ -948,7 +1281,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p4"]}
         />
 
-        <InsightCallout text="A performance do time comercial revela alta concentração: poucos vendedores entregam a maior parte dos resultados. O vendedor líder gera lucros significativos preservando a margem média, enquanto vendedores de menor performance tendem a praticar descontos mais agressivos e operam com margens de contribuição muito baixas na tentativa de bater metas de faturamento." />
+        <InsightCallout text={buildSellerInsight(sellersByProfit, sellersByRevenue, sellersByTarget)} />
 
         <div className="grid gap-3 sm:grid-cols-3">
           <ContextCard
@@ -974,15 +1307,102 @@ export function DashboardView() {
           />
         </div>
 
+        {currentSeller ? (
+          <Card className="glass-panel">
+            <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <CardTitle>Analise para one-on-one</CardTitle>
+                <CardDescription>
+                  Diagnostico por vendedor com base em margem, desconto, meta, atraso e vendas com prejuizo.
+                </CardDescription>
+              </div>
+              <div className="w-full md:w-64">
+                <Select
+                  label="Vendedor em foco"
+                  value={currentSeller.name}
+                  options={sellerOptions}
+                  onChange={(event) => setSelectedSeller(event.target.value)}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-md border border-white/10 bg-white/[0.045] p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Prioridade</p>
+                  <div className="mt-2">
+                    <Badge
+                      variant={
+                        currentSellerDiagnostic.priority === "Alta"
+                          ? "danger"
+                          : currentSellerDiagnostic.priority === "Media"
+                            ? "warning"
+                            : "success"
+                      }
+                    >
+                      {currentSellerDiagnostic.priority}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="rounded-md border border-white/10 bg-white/[0.045] p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Lucro</p>
+                  <p className="metric-number mt-2 text-lg font-semibold text-white">{formatCompactBRL(currentSeller.profit)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    #{currentSellerRanks?.profit ?? "-"} de {sellersByProfit.length}
+                  </p>
+                </div>
+                <div className="rounded-md border border-white/10 bg-white/[0.045] p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Receita</p>
+                  <p className="metric-number mt-2 text-lg font-semibold text-white">{formatCompactBRL(currentSeller.revenue)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    #{currentSellerRanks?.revenue ?? "-"} de {sellersByRevenue.length}
+                  </p>
+                </div>
+                <div className="rounded-md border border-white/10 bg-white/[0.045] p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Meta</p>
+                  <p className="metric-number mt-2 text-lg font-semibold text-white">{formatPercent(currentSeller.targetCompletion)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    #{currentSellerRanks?.target ?? "-"} de {sellersByTarget.length}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-md border border-red-signal/20 bg-red-signal/12 p-4">
+                  <p className="text-sm font-semibold text-red-100">Pontos para melhorar</p>
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300">
+                    {currentSellerDiagnostic.issues.map((issue) => (
+                      <li key={issue} className="flex gap-2">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-red-signal" />
+                        <span>{issue}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-md border border-lime-signal/20 bg-lime-signal/10 p-4">
+                  <p className="text-sm font-semibold text-lime-signal">Pontos para preservar</p>
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300">
+                    {currentSellerDiagnostic.strengths.map((strength) => (
+                      <li key={strength} className="flex gap-2">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-lime-signal" />
+                        <span>{strength}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
         <div className="grid gap-6 xl:grid-cols-3">
-          <ChartShell title="Ranking por Lucro Total" description="Vendedores ordenados pelo lucro acumulado.">
-            <MetricBarList items={sellersByProfit} metric="profit" limit={6} />
+          <ChartShell title="Ranking por Lucro Total" description="Todos os vendedores ordenados pelo lucro acumulado.">
+            <MetricBarList items={sellersByProfit} metric="profit" limit={sellersByProfit.length} />
           </ChartShell>
-          <ChartShell title="Ranking por Receita" description="Vendedores ordenados pelo faturamento bruto.">
-            <MetricBarList items={sellersByRevenue} metric="revenue" limit={6} />
+          <ChartShell title="Ranking por Receita" description="Todos os vendedores ordenados pelo faturamento bruto.">
+            <MetricBarList items={sellersByRevenue} metric="revenue" limit={sellersByRevenue.length} />
           </ChartShell>
-          <ChartShell title="Ranking por Cumprimento de Meta" description="Vendedores ordenados pelo cumprimento da meta comercial.">
-            <MetricBarList items={sellersByTarget} metric="targetCompletion" limit={6} />
+          <ChartShell title="Ranking por Cumprimento de Meta" description="Todos os vendedores ordenados pelo cumprimento da meta comercial.">
+            <MetricBarList items={sellersByTarget} metric="targetCompletion" limit={sellersByTarget.length} />
           </ChartShell>
         </div>
       </section>
@@ -999,7 +1419,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p5"]}
         />
 
-        <InsightCallout text="Os clientes do tipo Recorrente geram muito mais receita e lucro do que clientes novos. Isso comprova que a fidelização de clientes e a manutenção do relacionamento de longo prazo trazem retornos financeiros expressivos e seguros, enquanto clientes novos demandam maior esforço e geram volume consideravelmente inferior." />
+        <InsightCallout text={buildClientInsight(clientTypesByRevenue, clientTypesByProfit)} />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <ContextCard
@@ -1040,7 +1460,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p6"]}
         />
 
-        <InsightCallout text="A análise por faixas prova a relação inversa entre descontos e lucratividade. Vendas com 0% ou até 5% de desconto operam com margens excelentes (acima de 25%) e lucros médios consistentes. Porém, à medida que o desconto ultrapassa 10%, tanto o Lucro Médio em reais quanto a Margem Média despencam drasticamente, culminando em 123 vendas com prejuízo líquido." />
+        <InsightCallout text={buildDiscountInsight(summary, correlation, discountBandsData)} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {["averageDiscount", "negativeProfitSales"].map((key) => (
@@ -1113,7 +1533,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p7"]}
         />
 
-        <InsightCallout text="A ineficiência logística impacta diretamente a rentabilidade: as vendas com status Atrasado geram um volume de faturamento expressivo, mas operam com margens de lucro reduzidas se comparadas às entregas realizadas no prazo. Isso indica que custos operacionais e administrativos de devolução/atraso corroem a margem líquida." />
+        <InsightCallout text={buildDeliveryInsight(delivery)} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard {...kpis.delayRate} />
@@ -1200,7 +1620,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p8"]}
         />
 
-        <InsightCallout text="A rentabilidade de produtos está concentrada nas principais marcas e linhas. Focar a estratégia comercial e os esforços de marketing nessas marcas líderes assegura maior contribuição para o lucro, enquanto linhas secundárias com baixa margem devem ter seu espaço reduzido." />
+        <InsightCallout text={buildBrandInsight(brands, productLines, summary)} />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <ContextCard
@@ -1243,34 +1663,53 @@ export function DashboardView() {
 
         <Card className="glass-panel">
           <CardHeader>
-            <CardTitle>Plano de acao completo</CardTitle>
-            <CardDescription>Acoes priorizadas extraidas dos outputs finais da etapa 7.</CardDescription>
+            <CardTitle>Plano de ação</CardTitle>
+            <CardDescription>Problemas priorizados, evidências, impacto e recomendação executiva.</CardDescription>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Prazo</TableHead>
-                  <TableHead>Acao</TableHead>
-                  <TableHead>Objetivo</TableHead>
-                  <TableHead>Area</TableHead>
+                  <TableHead>Problema identificado</TableHead>
+                  <TableHead>Evidência</TableHead>
+                  <TableHead>Impacto</TableHead>
+                  <TableHead>Recomendação</TableHead>
                   <TableHead>Prioridade</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {outputTables.actionPlan.map((item, idx) => (
+                {requestedActionPlanRows.map((item, idx) => (
                   <TableRow key={`action-${idx}`}>
-                    <TableCell>{csvVal(item, "Prazo")}</TableCell>
-                    <TableCell className="font-medium text-white">{csvVal(item, "Ação", "Acao", "ão")}</TableCell>
-                    <TableCell>{csvVal(item, "Objetivo")}</TableCell>
-                    <TableCell>{csvVal(item, "Área Responsável", "rea Respons", "Area")}</TableCell>
+                    <TableCell className="font-medium text-white">{item.problema}</TableCell>
+                    <TableCell>{item.evidencia}</TableCell>
+                    <TableCell>{item.impacto}</TableCell>
+                    <TableCell>{item.recomendacao}</TableCell>
                     <TableCell>
-                      <Badge variant={csvVal(item, "Prioridade") === "Alta" ? "danger" : "violet"}>{csvVal(item, "Prioridade")}</Badge>
+                      <Badge variant={item.prioridade === "Alta" ? "danger" : "warning"}>
+                        {item.prioridade}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel">
+          <CardHeader>
+            <CardTitle>14. Recomendações Estratégicas Finais</CardTitle>
+            <CardDescription>Direcionamentos finais para gestão comercial, margem e operação.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 lg:grid-cols-2">
+              {strategicRecommendations.map((item) => (
+                <div key={item.title} className="rounded-md border border-white/10 bg-white/[0.045] p-4">
+                  <h3 className="text-sm font-semibold text-white">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </section>
