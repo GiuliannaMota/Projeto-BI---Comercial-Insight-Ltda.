@@ -68,8 +68,8 @@ import { cn } from "../lib/utils";
 /* ─── Section definitions ───────────────────────────────────── */
 
 const SECTIONS: NavSection[] = [
-  { id: "sec-p0", badge: "P0", label: "Visao Geral", color: "220" },
-  { id: "sec-p1", badge: "P1", label: "Regioes", color: "190" },
+  { id: "sec-p0", badge: "P0", label: "Visão Geral", color: "220" },
+  { id: "sec-p1", badge: "P1", label: "Regiões", color: "190" },
   { id: "sec-p2", badge: "P2", label: "Produtos", color: "45" },
   { id: "sec-p3", badge: "P3", label: "Canais", color: "83" },
   { id: "sec-p4", badge: "P4", label: "Vendedores", color: "260" },
@@ -139,8 +139,8 @@ function tooltipNumber(value: string | number | Array<string | number>) {
 function defaultChartReading(title: string, description: string): ReadingContent {
   return {
     sobre: description,
-    comoAnalisar: `Leia ${title} pela ordem dos valores, pelo tamanho relativo das barras/linhas e pelos detalhes do tooltip ou rodape.`,
-    insight: "Use o grafico como triagem. Quando a diferenca for pequena, trate como sinal para investigar antes de assumir que um grupo e claramente melhor.",
+    comoAnalisar: `Leia ${title} pela ordem dos valores, pelo tamanho relativo das barras/linhas e pelos detalhes do tooltip ou rodapé.`,
+    insight: "Use o gráfico como triagem. Quando a diferença for pequena, trate como sinal para investigar antes de assumir que um grupo é claramente melhor.",
   };
 }
 
@@ -171,7 +171,7 @@ function ChartShell({
           {action}
           <ReadingIconButton
             open={readingOpen}
-            ariaLabel={`Ver leitura do grafico ${title}`}
+            ariaLabel={`Ver leitura do gráfico ${title}`}
             onClick={() => setReadingOpen((current) => !current)}
           />
         </div>
@@ -209,7 +209,7 @@ function ContextCard({
   }[tone];
   const reading = {
     sobre: `${label}: ${title}. O valor exibido e ${value}.`,
-    comoAnalisar: "Use este card como leitura resumida do recorte atual e compare com os rankings ou graficos da mesma secao.",
+    comoAnalisar: "Use este card como leitura resumida do recorte atual e compare com os rankings ou gráficos da mesma seção.",
     insight: helper || "Sem detalhe adicional para o filtro atual.",
   };
 
@@ -246,7 +246,7 @@ function formatLeaderHelper(metric: DimensionMetric | undefined) {
 function InsightCallout({ text }: { text: string }) {
   return (
     <div className="rounded-lg border border-cyan-500/20 bg-cyan-950/10 p-4 text-sm text-cyan-200">
-      <strong className="block text-white mb-1">Conclusao analitica:</strong>
+      <strong className="block text-white mb-1">Conclusão analítica:</strong>
       {text}
     </div>
   );
@@ -256,6 +256,8 @@ const rankingTabItems = [
   { value: "product", label: "Produto" },
   { value: "category", label: "Categoria" },
 ];
+
+const SELLER_RANKING_LIMIT = 10;
 
 const requestedActionPlanRows = [
   {
@@ -387,7 +389,7 @@ function rankOf(items: DimensionMetric[], name: string) {
 }
 
 function buildOverviewInsight(summary: KpiSummary) {
-  return `No recorte atual, a empresa soma ${formatCompactBRL(summary.revenue)} de receita, ${formatCompactBRL(summary.profit)} de lucro e margem de ${formatPercent(summary.margin)}. O ponto mais claro nao e falta de faturamento, e sim consistencia: ${formatPercent(summary.goalHitRate)} das vendas bateram meta individual e ${formatPercent(summary.delayRate)} ficaram atrasadas. A leitura recomenda ajustar meta, margem e atraso em conjunto, sem concluir causa operacional direta sem uma base de custos logisticos.`;
+  return `No recorte atual, a empresa soma ${formatCompactBRL(summary.revenue)} de receita, ${formatCompactBRL(summary.profit)} de lucro e margem de ${formatPercent(summary.margin)}. O ponto mais claro não é falta de faturamento, e sim consistência: ${formatPercent(summary.goalHitRate)} das vendas bateram meta individual e ${formatPercent(summary.delayRate)} ficaram atrasadas. A leitura recomenda ajustar meta, margem e atraso em conjunto, sem concluir causa operacional direta sem uma base de custos logísticos.`;
 }
 
 function buildRegionInsight(regions: DimensionMetric[]) {
@@ -397,7 +399,7 @@ function buildRegionInsight(regions: DimensionMetric[]) {
   const worstMargin = [...regions].sort((a, b) => a.margin - b.margin)[0];
   const marginGap = bestMargin.margin - worstMargin.margin;
 
-  return `${revenueLeader.name} lidera a receita no recorte (${formatCompactBRL(revenueLeader.revenue)}). Em margem, ${bestMargin.name} aparece melhor (${formatPercent(bestMargin.margin)}) e ${worstMargin.name} fica no menor ponto (${formatPercent(worstMargin.margin)}), uma diferenca ${gapLabel(marginGap)} de ${formatPp(marginGap)}. A conclusao correta e investigar preco, mix e desconto nas regioes de menor margem, nao assumir uma reestruturacao ampla sem evidencias adicionais.`;
+  return `${revenueLeader.name} lidera a receita no recorte (${formatCompactBRL(revenueLeader.revenue)}). Em margem, ${bestMargin.name} aparece melhor (${formatPercent(bestMargin.margin)}) e ${worstMargin.name} fica no menor ponto (${formatPercent(worstMargin.margin)}), uma diferença ${gapLabel(marginGap)} de ${formatPp(marginGap)}. A conclusão correta é investigar preço, mix e desconto nas regiões de menor margem, sem assumir uma reestruturação ampla sem evidências adicionais.`;
 }
 
 function buildProductInsight(productsByProfit: DimensionMetric[], productsByMargin: DimensionMetric[], categoriesByProfit: DimensionMetric[]) {
@@ -407,11 +409,11 @@ function buildProductInsight(productsByProfit: DimensionMetric[], productsByMarg
   const categoryLeader = categoriesByProfit[0];
   const sameProduct = profitLeader.name === marginLeader.name;
 
-  return `${profitLeader.name} lidera o lucro total (${formatCompactBRL(profitLeader.profit)}) e ${categoryLeader.name} e a categoria com maior contribuicao financeira. ${sameProduct ? "O mesmo produto tambem lidera margem, reforcando prioridade comercial." : `${marginLeader.name} tem a maior margem (${formatPercent(marginLeader.margin)}), mostrando que lucro absoluto e eficiencia percentual nao sao a mesma coisa.`} A decisao deve combinar lucro, margem e volume antes de alterar campanhas ou estoque.`;
+  return `${profitLeader.name} lidera o lucro total (${formatCompactBRL(profitLeader.profit)}) e ${categoryLeader.name} é a categoria com maior contribuição financeira. ${sameProduct ? "O mesmo produto também lidera margem, reforçando prioridade comercial." : `${marginLeader.name} tem a maior margem (${formatPercent(marginLeader.margin)}), mostrando que lucro absoluto e eficiência percentual não são a mesma coisa.`} A decisão deve combinar lucro, margem e volume antes de alterar campanhas ou estoque.`;
 }
 
 function buildChannelInsight(online?: DimensionMetric, store?: DimensionMetric) {
-  if (!online || !store) return "Sem comparacao completa entre Online e Loja para o filtro atual.";
+  if (!online || !store) return "Sem comparação completa entre Online e Loja para o filtro atual.";
   const revenueLeader = online.revenue >= store.revenue ? online : store;
   const profitLeader = online.profit >= store.profit ? online : store;
   const marginLeader = online.margin >= store.margin ? online : store;
@@ -419,7 +421,7 @@ function buildChannelInsight(online?: DimensionMetric, store?: DimensionMetric) 
   const marginGap = online.margin - store.margin;
   const delayGap = online.delayRate - store.delayRate;
 
-  return `${revenueLeader.name} lidera receita e ${profitLeader.name} lidera lucro no recorte. A diferenca de margem entre Online e Loja e ${gapLabel(marginGap)} (${formatPp(marginGap)}), enquanto a diferenca de atraso e ${gapLabel(delayGap)} (${formatPp(delayGap)}). Assim, ${marginLeader.name} pode ser tratado como referencia de eficiencia percentual e ${delayLeader.name} como melhor referencia operacional, mas a recomendacao deve preservar a distincao entre escala e margem.`;
+  return `${revenueLeader.name} lidera receita e ${profitLeader.name} lidera lucro no recorte. A diferença de margem entre Online e Loja é ${gapLabel(marginGap)} (${formatPp(marginGap)}), enquanto a diferença de atraso é ${gapLabel(delayGap)} (${formatPp(delayGap)}). Assim, ${marginLeader.name} pode ser tratado como referência de eficiência percentual e ${delayLeader.name} como melhor referência operacional, mas a recomendação deve preservar a distinção entre escala e margem.`;
 }
 
 function buildSellerInsight(sellersByProfit: DimensionMetric[], sellersByRevenue: DimensionMetric[], sellersByTarget: DimensionMetric[]) {
@@ -428,7 +430,7 @@ function buildSellerInsight(sellersByProfit: DimensionMetric[], sellersByRevenue
   const revenueLeader = sellersByRevenue[0] ?? profitLeader;
   const targetLeader = sellersByTarget[0] ?? profitLeader;
 
-  return `${profitLeader.name} lidera lucro (${formatCompactBRL(profitLeader.profit)}), ${revenueLeader.name} lidera receita (${formatCompactBRL(revenueLeader.revenue)}) e ${targetLeader.name} lidera cumprimento de meta (${formatPercent(targetLeader.targetCompletion)}). Como os lideres podem mudar conforme a metrica, a avaliacao comercial deve separar conversa de volume, rentabilidade, desconto e meta. O painel de one-on-one abaixo prioriza vendedores por gargalos relativos ao time no filtro atual.`;
+  return `${profitLeader.name} lidera lucro (${formatCompactBRL(profitLeader.profit)}), ${revenueLeader.name} lidera receita (${formatCompactBRL(revenueLeader.revenue)}) e ${targetLeader.name} lidera cumprimento de meta (${formatPercent(targetLeader.targetCompletion)}). Como os líderes podem mudar conforme a métrica, a avaliação comercial deve separar conversa de volume, rentabilidade, desconto e meta. O painel de one-on-one abaixo prioriza vendedores por gargalos relativos ao time no filtro atual.`;
 }
 
 function buildClientInsight(clientTypesByRevenue: DimensionMetric[], clientTypesByProfit: DimensionMetric[]) {
@@ -438,7 +440,7 @@ function buildClientInsight(clientTypesByRevenue: DimensionMetric[], clientTypes
   const bestMargin = [...clientTypesByProfit].sort((a, b) => b.margin - a.margin)[0];
   const marginGap = bestMargin.margin - revenueLeader.margin;
 
-  return `${revenueLeader.name} lidera receita (${formatCompactBRL(revenueLeader.revenue)}) e ${profitLeader.name} lidera lucro (${formatCompactBRL(profitLeader.profit)}). ${bestMargin.name} tem a melhor margem (${formatPercent(bestMargin.margin)}), com diferenca ${gapLabel(marginGap)} de ${formatPp(marginGap)} frente ao lider de receita. A leitura correta e equilibrar retencao e aquisicao, sem afirmar que um perfil e muito superior quando a margem estiver proxima.`;
+  return `${revenueLeader.name} lidera receita (${formatCompactBRL(revenueLeader.revenue)}) e ${profitLeader.name} lidera lucro (${formatCompactBRL(profitLeader.profit)}). ${bestMargin.name} tem a melhor margem (${formatPercent(bestMargin.margin)}), com diferença ${gapLabel(marginGap)} de ${formatPp(marginGap)} frente ao líder de receita. A leitura correta é equilibrar retenção e aquisição, sem afirmar que um perfil é muito superior quando a margem estiver próxima.`;
 }
 
 function buildDiscountInsight(summary: KpiSummary, correlation: number, bands: DiscountBandMetric[]) {
@@ -446,18 +448,18 @@ function buildDiscountInsight(summary: KpiSummary, correlation: number, bands: D
   const lowBand = bands.find((band) => band.name === "0.1% a 5%") ?? bands.find((band) => band.name === "Sem Desconto");
   const marginGap = lowBand && highBand ? lowBand.avgMargin / 100 - highBand.avgMargin / 100 : 0;
 
-  return `A correlacao desconto x margem e ${formatDecimal(correlation, 2)} (${correlationLabel(correlation)}). O desconto medio do recorte e ${formatPercent(summary.averageDiscount)} e ha ${formatNumber(summary.negativeProfitSales)} vendas com lucro negativo. ${lowBand && highBand ? `Entre ${lowBand.name} e ${highBand.name}, a diferenca de margem media e ${gapLabel(marginGap)} (${formatPp(marginGap)}).` : "As faixas devem ser lidas junto com volume de vendas."} Isso aponta necessidade de regra de aprovacao, mas sem exagerar: desconto maior reduz margem quando nao vem compensado por mix, preco ou volume rentavel.`;
+  return `A correlação desconto x margem é ${formatDecimal(correlation, 2)} (${correlationLabel(correlation)}). O desconto médio do recorte é ${formatPercent(summary.averageDiscount)} e há ${formatNumber(summary.negativeProfitSales)} vendas com lucro negativo. ${lowBand && highBand ? `Entre ${lowBand.name} e ${highBand.name}, a diferença de margem média é ${gapLabel(marginGap)} (${formatPp(marginGap)}).` : "As faixas devem ser lidas junto com volume de vendas."} Isso aponta necessidade de regra de aprovação, mas sem exagerar: desconto maior reduz margem quando não vem compensado por mix, preço ou volume rentável.`;
 }
 
 function buildDeliveryInsight(delivery: DimensionMetric[]) {
-  if (!delivery.length) return "Sem dados logisticos para o filtro atual.";
+  if (!delivery.length) return "Sem dados logísticos para o filtro atual.";
   const delayed = delivery.find((item) => item.name.toLowerCase().includes("atras"));
   const onTime = delivery.find((item) => !item.name.toLowerCase().includes("atras"));
   if (!delayed || !onTime) return "A leitura de atraso precisa de pelo menos dois status de entrega no filtro atual.";
   const marginGap = onTime.margin - delayed.margin;
   const targetGap = onTime.targetCompletion - delayed.targetCompletion;
 
-  return `Entregas atrasadas mostram margem de ${formatPercent(delayed.margin)} contra ${formatPercent(onTime.margin)} nas entregas no prazo, diferenca ${gapLabel(marginGap)} de ${formatPp(marginGap)}. Em cumprimento de meta, a diferenca e ${gapLabel(targetGap)} (${formatPp(targetGap)}). Isso sustenta tratar atraso como indicador de acompanhamento; nao sustenta afirmar sozinho que devolucoes ou custos logisticos reduzem margem sem uma tabela especifica de custos operacionais.`;
+  return `Entregas atrasadas mostram margem de ${formatPercent(delayed.margin)} contra ${formatPercent(onTime.margin)} nas entregas no prazo, diferença ${gapLabel(marginGap)} de ${formatPp(marginGap)}. Em cumprimento de meta, a diferença é ${gapLabel(targetGap)} (${formatPp(targetGap)}). Isso sustenta tratar atraso como indicador de acompanhamento; não sustenta afirmar sozinho que devoluções ou custos logísticos reduzem margem sem uma tabela específica de custos operacionais.`;
 }
 
 function buildBrandInsight(brands: DimensionMetric[], productLines: DimensionMetric[], summary: KpiSummary) {
@@ -467,7 +469,7 @@ function buildBrandInsight(brands: DimensionMetric[], productLines: DimensionMet
   const brandShare = summary.profit ? brandLeader.profit / summary.profit : 0;
   const lineShare = summary.profit ? lineLeader.profit / summary.profit : 0;
 
-  return `${brandLeader.name} lidera lucro por marca (${formatCompactBRL(brandLeader.profit)}, ${formatPercent(brandShare)} do lucro do recorte) e ${lineLeader.name} lidera por linha (${formatCompactBRL(lineLeader.profit)}, ${formatPercent(lineShare)}). A concentracao existe se a participacao for alta, mas a acao correta e proteger os itens rentaveis e revisar os de baixa margem antes de reduzir espaco comercial.`;
+  return `${brandLeader.name} lidera lucro por marca (${formatCompactBRL(brandLeader.profit)}, ${formatPercent(brandShare)} do lucro do recorte) e ${lineLeader.name} lidera por linha (${formatCompactBRL(lineLeader.profit)}, ${formatPercent(lineShare)}). A concentração existe se a participação for alta, mas a ação correta é proteger os itens rentáveis e revisar os de baixa margem antes de reduzir espaço comercial.`;
 }
 
 function buildSellerDiagnostics(sellers: DimensionMetric[], team: KpiSummary): SellerDiagnostic[] {
@@ -482,11 +484,11 @@ function buildSellerDiagnostics(sellers: DimensionMetric[], team: KpiSummary): S
 
       if (seller.margin + 0.02 < team.margin) {
         score += 2;
-        issues.push(`Margem de ${formatPercent(seller.margin)} fica ${formatPp(team.margin - seller.margin)} abaixo da media do recorte (${formatPercent(team.margin)}). Revisar mix vendido, preco e excecoes de desconto.`);
+        issues.push(`Margem de ${formatPercent(seller.margin)} fica ${formatPp(team.margin - seller.margin)} abaixo da média do recorte (${formatPercent(team.margin)}). Revisar mix vendido, preço e exceções de desconto.`);
       }
       if (seller.averageDiscount > team.averageDiscount + 0.01) {
         score += 1;
-        issues.push(`Desconto medio de ${formatPercent(seller.averageDiscount)} esta acima da media (${formatPercent(team.averageDiscount)}). Validar justificativas comerciais e limites de aprovacao.`);
+        issues.push(`Desconto médio de ${formatPercent(seller.averageDiscount)} está acima da média (${formatPercent(team.averageDiscount)}). Validar justificativas comerciais e limites de aprovação.`);
       }
       if (seller.targetCompletion + 0.03 < team.targetCompletion) {
         score += 2;
@@ -494,27 +496,27 @@ function buildSellerDiagnostics(sellers: DimensionMetric[], team: KpiSummary): S
       }
       if (seller.delayRate > team.delayRate + 0.05) {
         score += 1;
-        issues.push(`Taxa de atraso de ${formatPercent(seller.delayRate)} acima do recorte (${formatPercent(team.delayRate)}). Checar promessa de prazo, regiao e canal das vendas.`);
+        issues.push(`Taxa de atraso de ${formatPercent(seller.delayRate)} acima do recorte (${formatPercent(team.delayRate)}). Checar promessa de prazo, região e canal das vendas.`);
       }
       if (seller.negativeProfitSales > 0) {
         score += Math.min(3, seller.negativeProfitSales);
-        issues.push(`${formatNumber(seller.negativeProfitSales)} vendas com lucro negativo. Rever casos antes da proxima rodada de metas.`);
+        issues.push(`${formatNumber(seller.negativeProfitSales)} vendas com lucro negativo. Rever casos antes da próxima rodada de metas.`);
       }
 
       if (seller.margin >= team.margin + 0.02) {
-        strengths.push(`Margem ${formatPp(seller.margin - team.margin)} acima da media do recorte.`);
+        strengths.push(`Margem ${formatPp(seller.margin - team.margin)} acima da média do recorte.`);
       }
       if (seller.profit >= avgProfitPerSeller) {
-        strengths.push(`Lucro acima da media por vendedor (${formatCompactBRL(avgProfitPerSeller)}).`);
+        strengths.push(`Lucro acima da média por vendedor (${formatCompactBRL(avgProfitPerSeller)}).`);
       }
       if (seller.targetCompletion >= team.targetCompletion + 0.03) {
-        strengths.push("Cumprimento de meta acima da media do recorte.");
+        strengths.push("Cumprimento de meta acima da média do recorte.");
       }
       if (!strengths.length) {
-        strengths.push("Sem destaque positivo claro no recorte; procurar boas praticas qualitativas na conversa.");
+        strengths.push("Sem destaque positivo claro no recorte; procurar boas práticas qualitativas na conversa.");
       }
       if (!issues.length) {
-        issues.push("Sem gargalo quantitativo evidente. Use o one-on-one para documentar praticas replicaveis e riscos pontuais.");
+        issues.push("Sem gargalo quantitativo evidente. Use o one-on-one para documentar práticas replicáveis e riscos pontuais.");
       }
 
       const priority: SellerDiagnostic["priority"] = score >= 5 ? "Alta" : score >= 2 ? "Media" : "Baixa";
@@ -542,9 +544,9 @@ function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, Kp
       tone: "lime",
       delta: compareToBase(summary, baseKpis, "revenue"),
       reading: {
-        sobre: "Soma do valor vendido apos aplicar os filtros de periodo, canal e regiao.",
-        comoAnalisar: "Use junto com lucro e margem. Receita alta sem margem saudavel pode indicar mix fraco ou desconto excessivo.",
-        insight: "A escala comercial deve ser preservada, mas a decisao principal do projeto e proteger margem antes de perseguir volume isolado.",
+        sobre: "Soma do valor vendido após aplicar os filtros de período, canal e região.",
+        comoAnalisar: "Use junto com lucro e margem. Receita alta sem margem saudável pode indicar mix fraco ou desconto excessivo.",
+        insight: "A escala comercial deve ser preservada, mas a decisão principal do projeto é proteger margem antes de perseguir volume isolado.",
       },
     },
     profit: {
@@ -556,8 +558,8 @@ function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, Kp
       delta: compareToBase(summary, baseKpis, "profit"),
       reading: {
         sobre: "Receita menos custos, consolidando o ganho financeiro real das vendas filtradas.",
-        comoAnalisar: "Compare com receita. Se a receita cresce e o lucro nao acompanha, ha perda de eficiencia no mix, preco ou desconto.",
-        insight: "Os cortes de prejuizo devem mirar produtos e vendas com margem negativa antes de expandir metas comerciais.",
+        comoAnalisar: "Compare com receita. Se a receita cresce e o lucro não acompanha, há perda de eficiência no mix, preço ou desconto.",
+        insight: "Os cortes de prejuízo devem mirar produtos e vendas com margem negativa antes de expandir metas comerciais.",
       },
     },
     margin: {
@@ -569,8 +571,8 @@ function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, Kp
       delta: compareToBase(summary, baseKpis, "margin"),
       reading: {
         sobre: "Percentual da receita que permanece como lucro.",
-        comoAnalisar: "Leia como qualidade da venda. Margem baixa pede revisao de preco, descontos, custo ou mix de produtos.",
-        insight: "A governanca de margem e o eixo central para evitar que vendas grandes escondam destruicao de valor.",
+        comoAnalisar: "Leia como qualidade da venda. Margem baixa pede revisão de preço, descontos, custo ou mix de produtos.",
+        insight: "A governança de margem é o eixo central para evitar que vendas grandes escondam destruição de valor.",
       },
     },
     quantity: {
@@ -582,34 +584,34 @@ function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, Kp
       delta: compareToBase(summary, baseKpis, "quantity"),
       reading: {
         sobre: "Total de unidades comercializadas no recorte selecionado.",
-        comoAnalisar: "Combine com ticket medio e margem. Volume alto ajuda escala, mas nao garante resultado financeiro.",
-        insight: "Use quantidade para detectar pressao operacional e validar se o mix lider compensa em lucro.",
+        comoAnalisar: "Combine com ticket médio e margem. Volume alto ajuda escala, mas não garante resultado financeiro.",
+        insight: "Use quantidade para detectar pressão operacional e validar se o mix líder compensa em lucro.",
       },
     },
     ticket: {
-      label: "Ticket Medio",
+      label: "Ticket Médio",
       value: formatCompactBRL(summary.ticket),
-      helper: "Receita media por venda",
+      helper: "Receita média por venda",
       icon: Receipt,
       tone: "neutral",
       delta: compareToBase(summary, baseKpis, "ticket"),
       reading: {
-        sobre: "Receita media gerada por cada venda.",
-        comoAnalisar: "Ticket maior e positivo quando vem acompanhado de margem e meta. Isolado, pode apenas refletir produtos caros.",
-        insight: "A leitura por canal e produto ajuda a separar aumento de valor real de simples concentracao em vendas maiores.",
+        sobre: "Receita média gerada por cada venda.",
+        comoAnalisar: "Ticket maior é positivo quando vem acompanhado de margem e meta. Isolado, pode apenas refletir produtos caros.",
+        insight: "A leitura por canal e produto ajuda a separar aumento de valor real de simples concentração em vendas maiores.",
       },
     },
     averageDiscount: {
-      label: "Desconto Medio",
+      label: "Desconto Médio",
       value: formatPercent(summary.averageDiscount),
-      helper: "Media concedida por venda",
+      helper: "Média concedida por venda",
       icon: BadgePercent,
       tone: summary.averageDiscount > 0.12 ? "red" : "violet",
       delta: compareToBase(summary, baseKpis, "averageDiscount"),
       deltaPolarity: "negative",
       reading: {
-        sobre: "Media de desconto aplicado nas vendas filtradas.",
-        comoAnalisar: "Observe se descontos maiores realmente elevam receita, meta e lucro. Sem essa compensacao, eles reduzem margem.",
+        sobre: "Média de desconto aplicado nas vendas filtradas.",
+        comoAnalisar: "Observe se descontos maiores realmente elevam receita, meta e lucro. Sem essa compensação, eles reduzem margem.",
         insight: "O scatter desconto x margem deve orientar limites comerciais por produto e canal.",
       },
     },
@@ -623,8 +625,8 @@ function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, Kp
       deltaPolarity: "negative",
       reading: {
         sobre: "Quantidade de vendas com lucro abaixo de zero.",
-        comoAnalisar: "Priorize os agrupamentos com mais ocorrencias e maior perda. Poucas vendas podem explicar grande parte do problema.",
-        insight: "O plano deve bloquear combinacoes de produto, desconto e canal que geram prejuizo recorrente.",
+        comoAnalisar: "Priorize os agrupamentos com mais ocorrências e maior perda. Poucas vendas podem explicar grande parte do problema.",
+        insight: "O plano deve bloquear combinações de produto, desconto e canal que geram prejuízo recorrente.",
       },
     },
     targetCompletion: {
@@ -636,8 +638,8 @@ function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, Kp
       delta: compareToBase(summary, baseKpis, "targetCompletion"),
       reading: {
         sobre: "Receita realizada dividida pela meta comercial do recorte.",
-        comoAnalisar: "Abaixo de 90% exige foco em execucao. Acima de 100% deve ser validado contra margem e desconto.",
-        insight: "Meta batida com margem pressionada nao resolve o problema; vendedor, canal e desconto precisam ser vistos juntos.",
+        comoAnalisar: "Abaixo de 90% exige foco em execução. Acima de 100% deve ser validado contra margem e desconto.",
+        insight: "Meta batida com margem pressionada não resolve o problema; vendedor, canal e desconto precisam ser vistos juntos.",
       },
     },
     goalHitRate: {
@@ -648,9 +650,9 @@ function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, Kp
       tone: summary.goalHitRate < 0.5 ? "red" : "lime",
       delta: compareToBase(summary, baseKpis, "goalHitRate"),
       reading: {
-        sobre: "Participacao das vendas marcadas como atingindo a meta.",
-        comoAnalisar: "Mostra consistencia da execucao, nao apenas o resultado agregado. Taxa baixa indica dependencia de poucos casos fortes.",
-        insight: "Use o ranking de vendedores para replicar praticas dos grupos consistentes sem ampliar descontos ruins.",
+        sobre: "Participação das vendas marcadas como atingindo a meta.",
+        comoAnalisar: "Mostra consistência da execução, não apenas o resultado agregado. Taxa baixa indica dependência de poucos casos fortes.",
+        insight: "Use o ranking de vendedores para replicar práticas dos grupos consistentes sem ampliar descontos ruins.",
       },
     },
     delayRate: {
@@ -663,8 +665,8 @@ function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, Kp
       deltaPolarity: "negative",
       reading: {
         sobre: "Percentual de vendas com status de entrega atrasado.",
-        comoAnalisar: "Cruze com canal e regiao. Atraso elevado pode afetar recompra, satisfacao e capacidade de cumprir planos comerciais.",
-        insight: "A operacao logistica precisa de rotina de priorizacao para os canais e regioes com maior taxa de atraso.",
+        comoAnalisar: "Cruze com canal e região. Atraso elevado pode afetar recompra, satisfação e capacidade de cumprir planos comerciais.",
+        insight: "A operação logística precisa de rotina de priorização para os canais e regiões com maior taxa de atraso.",
       },
     },
   };
@@ -813,7 +815,7 @@ export function DashboardView() {
     [],
   );
   const regionOptions = React.useMemo(
-    () => [{ value: "all", label: "Todas as regioes" }, ...uniqueValues(salesRows, (row) => row.region).map((value) => ({ value, label: value }))],
+    () => [{ value: "all", label: "Todas as regiões" }, ...uniqueValues(salesRows, (row) => row.region).map((value) => ({ value, label: value }))],
     [],
   );
 
@@ -838,12 +840,12 @@ export function DashboardView() {
       {/* ── Header ──────────────────────────────── */}
       <header className="grid gap-4 lg:grid-cols-[1fr_28rem] lg:items-end">
         <div>
-          <Badge variant="violet">Dashboard analitico</Badge>
+          <Badge variant="violet">Dashboard analítico</Badge>
           <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-white md:text-5xl">
             Comercial Insight Ltda. em leitura financeira, comercial e operacional.
           </h1>
           <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
-            Analise de 2024 setorizada por perguntas de negocio. Cada secao responde uma pergunta com KPIs, graficos e insights acionaveis.
+            Análise de 2024 setorizada por perguntas de negócio. Cada seção responde uma pergunta com KPIs, gráficos e insights acionáveis.
           </p>
         </div>
         <Card className="glass-panel p-4">
@@ -854,7 +856,7 @@ export function DashboardView() {
               Canal: <strong className="text-slate-200">{filters.channel === "all" ? "Todos" : filters.channel}</strong>
             </span>
             <span>
-              Regiao: <strong className="text-slate-200">{filters.region === "all" ? "Todas" : filters.region}</strong>
+              Região: <strong className="text-slate-200">{filters.region === "all" ? "Todas" : filters.region}</strong>
             </span>
           </div>
         </Card>
@@ -864,7 +866,7 @@ export function DashboardView() {
       <div className="glass-panel sticky top-3 z-20 rounded-lg p-3">
         <div className="grid gap-3 md:grid-cols-[1.1fr_1fr_1fr_auto] md:items-end">
           <Select
-            label="Data / periodo"
+            label="Data / período"
             value={filters.period}
             options={periodOptions}
             onChange={(event) => setFilters((current) => ({ ...current, period: event.target.value as SalesFilters["period"] }))}
@@ -876,7 +878,7 @@ export function DashboardView() {
             onChange={(event) => setFilters((current) => ({ ...current, channel: event.target.value }))}
           />
           <Select
-            label="Regiao"
+            label="Região"
             value={filters.region}
             options={regionOptions}
             onChange={(event) => setFilters((current) => ({ ...current, region: event.target.value }))}
@@ -925,8 +927,8 @@ export function DashboardView() {
         <SectionHeader
           id="sec-p0"
           badge="P0"
-          question="Visao geral: saude financeira e tendencias"
-          description="Leitura de resultado, eficiencia e volume antes de abrir a analise setorizada por perguntas de negocio."
+          question="Visão geral: saúde financeira e tendências"
+          description="Leitura de resultado, eficiência e volume antes de abrir a análise setorizada por perguntas de negócio."
           badgeColor={BADGE_COLORS["sec-p0"]}
         />
 
@@ -945,7 +947,7 @@ export function DashboardView() {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1fr_0.92fr]">
-          <ChartShell title="Evolucao temporal" description="Receita e lucro mensal em 2024, respeitando os filtros globais.">
+          <ChartShell title="Evolução temporal" description="Receita e lucro mensal em 2024, respeitando os filtros globais.">
             <div className="h-[23rem]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trend} margin={{ left: 0, right: 16, top: 10, bottom: 0 }}>
@@ -989,8 +991,8 @@ export function DashboardView() {
         <SectionHeader
           id="sec-p1"
           badge="P1"
-          question="Quais regioes geram maior receita e quais apresentam menor margem?"
-          description="KPIs: receita, lucro, margem, taxa de atraso por regiao. Sul como referencia, Centro-Oeste como alerta."
+          question="Quais regiões geram maior receita e quais apresentam menor margem?"
+          description="KPIs: receita, lucro, margem, taxa de atraso por região. Sul como referência, Centro-Oeste como alerta."
           badgeColor={BADGE_COLORS["sec-p1"]}
         />
 
@@ -998,8 +1000,8 @@ export function DashboardView() {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <ContextCard
-            label="Regiao destaque"
-            title={regionLeader?.name ?? "Sem regiao"}
+            label="Região destaque"
+            title={regionLeader?.name ?? "Sem região"}
             value={regionLeader ? formatCompactBRL(regionLeader.revenue) : "-"}
             helper={formatLeaderHelper(regionLeader)}
             tone="violet"
@@ -1008,21 +1010,21 @@ export function DashboardView() {
             label="Melhor margem"
             title={(() => { const best = [...regions].sort((a, b) => b.margin - a.margin)[0]; return best?.name ?? "-"; })()}
             value={(() => { const best = [...regions].sort((a, b) => b.margin - a.margin)[0]; return best ? formatPercent(best.margin) : "-"; })()}
-            helper="Regiao com melhor margem de lucro"
+            helper="Região com melhor margem de lucro"
             tone="lime"
           />
           <ContextCard
             label="Menor margem"
             title={(() => { const worst = [...regions].sort((a, b) => a.margin - b.margin)[0]; return worst?.name ?? "-"; })()}
             value={(() => { const worst = [...regions].sort((a, b) => a.margin - b.margin)[0]; return worst ? formatPercent(worst.margin) : "-"; })()}
-            helper="Regiao que requer auditoria de custos e descontos"
+            helper="Região que requer auditoria de custos e descontos"
             tone="red"
           />
           <ContextCard
             label="Maior atraso"
             title={regionsByDelay[0]?.name ?? "-"}
             value={regionsByDelay[0] ? formatPercent(regionsByDelay[0].delayRate) : "-"}
-            helper="Taxa de entrega atrasada por regiao"
+            helper="Taxa de entrega atrasada por região"
             tone="red"
           />
         </div>
@@ -1035,7 +1037,7 @@ export function DashboardView() {
             activeRegion={activeRegion}
             onRegionHover={setActiveRegion}
           />
-          <ChartShell title="Leitura regional" description="Ranking regional e detalhe do estado/regiao em foco.">
+          <ChartShell title="Leitura regional" description="Ranking regional e detalhe do estado/região em foco.">
             {selectedRegion ? (
               <div className="mb-5 rounded-md border border-white/10 bg-white/[0.045] p-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{activeRegion ? "Foco no mapa" : "Maior receita"}</p>
@@ -1074,8 +1076,8 @@ export function DashboardView() {
         <SectionHeader
           id="sec-p2"
           badge="P2"
-          question="Quais produtos e categorias sao mais vendidos e geram maior lucro?"
-          description="KPIs: receita, lucro, margem, quantidade e ticket medio por produto e categoria."
+          question="Quais produtos e categorias são mais vendidos e geram maior lucro?"
+          description="KPIs: receita, lucro, margem, quantidade e ticket médio por produto e categoria."
           badgeColor={BADGE_COLORS["sec-p2"]}
         />
 
@@ -1277,7 +1279,7 @@ export function DashboardView() {
           id="sec-p4"
           badge="P4"
           question="Quais vendedores possuem melhor desempenho em receita, lucro e metas?"
-          description="Ranking multidimensional por lucro, margem, cumprimento de meta e desconto medio."
+          description="Ranking multidimensional por lucro, margem, cumprimento de meta e desconto médio."
           badgeColor={BADGE_COLORS["sec-p4"]}
         />
 
@@ -1311,9 +1313,10 @@ export function DashboardView() {
           <Card className="glass-panel">
             <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
-                <CardTitle>Analise para one-on-one</CardTitle>
+                <CardTitle>Análise para one-on-one</CardTitle>
                 <CardDescription>
-                  Diagnostico por vendedor com base em margem, desconto, meta, atraso e vendas com prejuizo.
+                  Diagnóstico por vendedor com base em margem, desconto, meta, atraso e vendas com prejuízo.
+                  A prioridade indica o nível de acompanhamento recomendado para a próxima reunião.
                 </CardDescription>
               </div>
               <div className="w-full md:w-64">
@@ -1328,7 +1331,7 @@ export function DashboardView() {
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-md border border-white/10 bg-white/[0.045] p-4">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Prioridade</p>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Prioridade de acompanhamento</p>
                   <div className="mt-2">
                     <Badge
                       variant={
@@ -1342,6 +1345,9 @@ export function DashboardView() {
                       {currentSellerDiagnostic.priority}
                     </Badge>
                   </div>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    Calculada pela distância em relação à média do time em margem, desconto, meta, atraso e vendas com prejuízo.
+                  </p>
                 </div>
                 <div className="rounded-md border border-white/10 bg-white/[0.045] p-4">
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Lucro</p>
@@ -1395,14 +1401,20 @@ export function DashboardView() {
         ) : null}
 
         <div className="grid gap-6 xl:grid-cols-3">
-          <ChartShell title="Ranking por Lucro Total" description="Todos os vendedores ordenados pelo lucro acumulado.">
-            <MetricBarList items={sellersByProfit} metric="profit" limit={sellersByProfit.length} />
+          <ChartShell title="Ranking por Lucro Total" description="Top 10 vendedores ordenados pelo lucro acumulado.">
+            <div className="seller-ranking-scroll max-h-[23rem] overflow-y-auto pr-2">
+              <MetricBarList items={sellersByProfit} metric="profit" limit={SELLER_RANKING_LIMIT} />
+            </div>
           </ChartShell>
-          <ChartShell title="Ranking por Receita" description="Todos os vendedores ordenados pelo faturamento bruto.">
-            <MetricBarList items={sellersByRevenue} metric="revenue" limit={sellersByRevenue.length} />
+          <ChartShell title="Ranking por Receita" description="Top 10 vendedores ordenados pelo faturamento bruto.">
+            <div className="seller-ranking-scroll max-h-[23rem] overflow-y-auto pr-2">
+              <MetricBarList items={sellersByRevenue} metric="revenue" limit={SELLER_RANKING_LIMIT} />
+            </div>
           </ChartShell>
-          <ChartShell title="Ranking por Cumprimento de Meta" description="Todos os vendedores ordenados pelo cumprimento da meta comercial.">
-            <MetricBarList items={sellersByTarget} metric="targetCompletion" limit={sellersByTarget.length} />
+          <ChartShell title="Ranking por Cumprimento de Meta" description="Top 10 vendedores ordenados pelo cumprimento da meta comercial.">
+            <div className="seller-ranking-scroll max-h-[23rem] overflow-y-auto pr-2">
+              <MetricBarList items={sellersByTarget} metric="targetCompletion" limit={SELLER_RANKING_LIMIT} />
+            </div>
           </ChartShell>
         </div>
       </section>
@@ -1456,7 +1468,7 @@ export function DashboardView() {
           id="sec-p6"
           badge="P6"
           question="O nivel de desconto concedido impacta negativamente a margem?"
-          description="KPIs: desconto medio, vendas com lucro negativo, correlacao desconto x margem."
+          description="KPIs: desconto médio, vendas com lucro negativo, correlação desconto x margem."
           badgeColor={BADGE_COLORS["sec-p6"]}
         />
 
@@ -1470,8 +1482,8 @@ export function DashboardView() {
 
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <ChartShell
-            title="Faixas de desconto vs Lucratividade"
-            description="Lucro Médio (R$, Barra - Esquerda) e Margem Média (%, Linha - Direita) por faixa de desconto."
+            title="Faixas de desconto vs lucratividade"
+            description="Lucro médio (R$, barra - esquerda) e margem média (%, linha - direita) por faixa de desconto."
           >
             <div className="h-[24rem]">
               <ResponsiveContainer width="100%" height="100%">
@@ -1499,7 +1511,7 @@ export function DashboardView() {
                     content={
                       <ChartTooltipContent
                         title={(label) => `Faixa: ${label}`}
-                        nameFormatter={(name) => (name === "avgProfit" ? "Lucro Médio" : "Margem Média")}
+                        nameFormatter={(name) => (name === "avgProfit" ? "Lucro médio" : "Margem média")}
                         valueFormatter={(value, name) =>
                           name === "avgProfit"
                             ? formatCompactBRL(Number(value))
@@ -1515,7 +1527,7 @@ export function DashboardView() {
             </div>
           </ChartShell>
 
-          <ChartShell title="Lucro negativo" description="Produtos que concentram vendas com prejuizo.">
+          <ChartShell title="Lucro negativo" description="Produtos que concentram vendas com prejuízo.">
             <MetricBarList items={negativeProducts} metric="negativeProfitSales" limit={8} dangerMetric />
           </ChartShell>
         </div>
@@ -1528,8 +1540,8 @@ export function DashboardView() {
         <SectionHeader
           id="sec-p7"
           badge="P7"
-          question="Existe relacao entre atraso na entrega e pior desempenho comercial?"
-          description="Impacto de atrasos por status, canal e regiao para orientar priorizacao operacional."
+          question="Existe relação entre atraso na entrega e pior desempenho comercial?"
+          description="Impacto de atrasos por status, canal e região para orientar priorização operacional."
           badgeColor={BADGE_COLORS["sec-p7"]}
         />
 
@@ -1601,7 +1613,7 @@ export function DashboardView() {
             <ChartShell title="Atraso por canal" description="Canais ordenados pela taxa de atraso.">
               <MetricBarList items={channelsByDelay} metric="delayRate" limit={4} dangerMetric />
             </ChartShell>
-            <ChartShell title="Atraso por regiao" description="Regioes ordenadas pela taxa de atraso.">
+            <ChartShell title="Atraso por região" description="Regiões ordenadas pela taxa de atraso.">
               <MetricBarList items={regionsByDelay} metric="delayRate" limit={5} dangerMetric />
             </ChartShell>
           </div>
@@ -1615,7 +1627,7 @@ export function DashboardView() {
         <SectionHeader
           id="sec-p8"
           badge="P8"
-          question="Quais marcas ou linhas de produto apresentam maior contribuicao para o lucro?"
+          question="Quais marcas ou linhas de produto apresentam maior contribuição para o lucro?"
           description="Ranking por marca e linha de produto, priorizando lucro e margem."
           badgeColor={BADGE_COLORS["sec-p8"]}
         />
@@ -1656,8 +1668,8 @@ export function DashboardView() {
         <SectionHeader
           id="sec-acao"
           badge="⚡"
-          question="Plano de acao: o que a empresa deve fazer?"
-          description="Recomendacoes consolidadas para governanca de margem, metas e logistica."
+          question="Plano de ação: o que a empresa deve fazer?"
+          description="Recomendações consolidadas para governança de margem, metas e logística."
           badgeColor={BADGE_COLORS["sec-acao"]}
         />
 

@@ -28,7 +28,7 @@ export function BrazilMapcn({ regionStats, metric, onMetricChange, activeRegion,
   const mapRef = React.useRef<maplibregl.Map | null>(null);
   const [readingOpen, setReadingOpen] = React.useState(false);
   const data = React.useMemo(() => buildBrazilGeoJson(regionStats, metric) as GeoJSON.FeatureCollection, [regionStats, metric]);
-  const metricLabel = metricTabs.find((item) => item.value === metric)?.label ?? "metrica";
+  const metricLabel = metricTabs.find((item) => item.value === metric)?.label ?? "métrica";
 
   // Keep hover handler updated in a ref so map event listener doesn't trigger map recreation
   const hoverRef = React.useRef(onRegionHover);
@@ -223,7 +223,7 @@ export function BrazilMapcn({ regionStats, metric, onMetricChange, activeRegion,
       <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <CardTitle>Mapa regional do Brasil</CardTitle>
-          <CardDescription>Estados simplificados em GeoJSON, coloridos pela metrica selecionada.</CardDescription>
+          <CardDescription>Estados simplificados em GeoJSON, coloridos pela métrica selecionada.</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Tabs items={metricTabs} value={metric} onValueChange={(value) => onMetricChange(value as MapMetric)} />
@@ -238,9 +238,9 @@ export function BrazilMapcn({ regionStats, metric, onMetricChange, activeRegion,
         <div className="px-5 pb-3">
           <ReadingPanel
             reading={{
-              sobre: `O mapa colore os estados pela metrica selecionada (${metricLabel}) e agrupa a leitura por regiao brasileira.`,
-              comoAnalisar: "Use a cor para localizar concentracao geografica e passe o mouse sobre o mapa para focar o resumo da regiao ao lado.",
-              insight: "Diferenca regional pequena deve ser tratada como sinal de investigacao, nao como prova de superioridade operacional.",
+              sobre: `O mapa colore os estados pela métrica selecionada (${metricLabel}) e agrupa a leitura por região brasileira.`,
+              comoAnalisar: "Use a cor para localizar concentração geográfica e passe o mouse sobre o mapa para focar o resumo da região ao lado.",
+              insight: "Diferença regional pequena deve ser tratada como sinal de investigação, não como prova de superioridade operacional.",
             }}
           />
         </div>

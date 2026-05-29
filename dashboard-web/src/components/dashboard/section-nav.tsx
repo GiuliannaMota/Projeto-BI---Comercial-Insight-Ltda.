@@ -26,7 +26,7 @@ export function SectionNav({ sections, activeId, progress }: SectionNavProps) {
   return (
     <nav
       className="fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 xl:flex"
-      aria-label="Navegacao por secoes"
+      aria-label="Navegação por seções"
     >
       <div className="relative flex flex-col items-center gap-5">
         {/* Background track line */}

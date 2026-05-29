@@ -86,7 +86,7 @@ export function ScatterSaleTooltip({ active, payload }: { active?: boolean; payl
   const profit = toNumber(point.profit);
 
   const rows = [
-    { label: "Regiao", value: String(point.region ?? "-") },
+    { label: "Região", value: String(point.region ?? "-") },
     { label: "Canal", value: String(point.channel ?? "-") },
     { label: "Desconto", value: `${formatDecimal(discount, 1)}%`, tone: "text-violet-100" },
     { label: "Margem", value: `${formatDecimal(margin, 1)}%`, tone: margin < 0 ? "text-red-100" : "text-lime-signal" },
