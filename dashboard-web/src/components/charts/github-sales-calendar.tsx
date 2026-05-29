@@ -6,6 +6,7 @@ import { Tabs } from "../ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "../../lib/utils";
+import { ReadingIconButton, ReadingPanel } from "../dashboard/reading-disclosure";
 
 interface GithubSalesCalendarProps {
   rows: SaleRow[];
@@ -49,6 +50,7 @@ function inQuarter(date: Date, view: PeriodFilter) {
 
 export function GithubSalesCalendar({ rows, year = 2024 }: GithubSalesCalendarProps) {
   const [view, setView] = React.useState<PeriodFilter>("all");
+  const [readingOpen, setReadingOpen] = React.useState(false);
   const calendarRef = React.useRef<HTMLDivElement | null>(null);
   const [hoveredDay, setHoveredDay] = React.useState<{
     x: number;
@@ -110,8 +112,26 @@ export function GithubSalesCalendar({ rows, year = 2024 }: GithubSalesCalendarPr
           <CardTitle>Calendario anual de vendas</CardTitle>
           <CardDescription>Intensidade por receita diaria em 2024, respeitando os filtros globais.</CardDescription>
         </div>
-        <Tabs items={quarterTabs} value={view} onValueChange={(value) => setView(value as PeriodFilter)} />
+        <div className="flex items-center gap-2">
+          <Tabs items={quarterTabs} value={view} onValueChange={(value) => setView(value as PeriodFilter)} />
+          <ReadingIconButton
+            open={readingOpen}
+            ariaLabel="Ver leitura do calendario de vendas"
+            onClick={() => setReadingOpen((current) => !current)}
+          />
+        </div>
       </CardHeader>
+      {readingOpen ? (
+        <div className="px-5 pb-3">
+          <ReadingPanel
+            reading={{
+              sobre: "Cada quadrado representa um dia do ano. A cor fica mais intensa quando a receita diaria e maior dentro do recorte filtrado.",
+              comoAnalisar: "Use os trimestres para procurar concentracao de vendas, dias sem movimento e picos que podem distorcer a leitura mensal.",
+              insight: "Picos isolados ajudam a explicar variacao de receita, mas nao comprovam melhora operacional sem cruzar lucro, margem e meta.",
+            }}
+          />
+        </div>
+      ) : null}
       <CardContent>
         <ScrollArea className="pb-2">
           <div ref={calendarRef} className="relative min-w-[760px]" onMouseLeave={() => setHoveredDay(null)}>

@@ -145,30 +145,25 @@ select {
 
 /* ── KPI Popover ───────────────────────────────────── */
 
-.kpi-popover {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  z-index: 40;
-  width: min(22rem, calc(100vw - 2rem));
+.reading-panel {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.625rem;
-  background: rgba(14, 19, 32, 0.96);
+  background: rgba(14, 19, 32, 0.94);
   box-shadow:
-    0 20px 64px -16px rgba(0, 0, 0, 0.8),
+    0 18px 54px -24px rgba(0, 0, 0, 0.86),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(24px);
-  animation: popover-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(20px);
+  animation: reading-panel-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes popover-in {
+@keyframes reading-panel-in {
   from {
     opacity: 0;
-    transform: translateY(-6px) scale(0.97);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
