@@ -20,6 +20,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -41,6 +43,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Progress } from "../components/ui/progress";
 import { Select } from "../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Tabs } from "../components/ui/tabs";
 import { outputTables, salesRows } from "../data/catalog";
 import type { DimensionMetric, KpiSummary, MapMetric, SalesFilters } from "../data/types";
 import {
@@ -207,6 +210,20 @@ function formatLeaderHelper(metric: DimensionMetric | undefined) {
   return `${formatNumber(metric.sales)} vendas / ${formatPercent(metric.margin)} margem`;
 }
 
+function InsightCallout({ text }: { text: string }) {
+  return (
+    <div className="rounded-lg border border-cyan-500/20 bg-cyan-950/10 p-4 text-sm text-cyan-200">
+      <strong className="block text-white mb-1">💡 Conclusão Analítica:</strong>
+      {text}
+    </div>
+  );
+}
+
+const rankingTabItems = [
+  { value: "product", label: "Produto" },
+  { value: "category", label: "Categoria" },
+];
+
 /* ─── KPI builder ───────────────────────────────────────────── */
 
 function buildKpis(summary: KpiSummary, baseKpis: KpiSummary): Record<string, KpiDefinition> {
@@ -355,6 +372,11 @@ export function DashboardView() {
   const [activeRegion, setActiveRegion] = React.useState<string | null>(null);
   const [showExecBar, setShowExecBar] = React.useState(false);
 
+  // States for P2 Product/Category Rankings
+  const [rank1Tab, setRank1Tab] = React.useState<"product" | "category">("product");
+  const [rank2Tab, setRank2Tab] = React.useState<"product" | "category">("product");
+  const [rank3Tab, setRank3Tab] = React.useState<"product" | "category">("product");
+
   const { activeId, progress } = useActiveSection(SECTION_IDS);
 
   /* ── Dynamic gradient ─────────────────────────────── */
@@ -385,20 +407,70 @@ export function DashboardView() {
   const trend = React.useMemo(() => monthlyTrend(filteredRows), [filteredRows]);
   const scatter = React.useMemo(() => discountScatter(filteredRows), [filteredRows]);
   const regions = React.useMemo(() => aggregateRegions(filteredRows), [filteredRows]);
+
+  // P3 — Channels
   const channelMetrics = React.useMemo(() => aggregateBy(filteredRows, (row) => row.channel), [filteredRows]);
   const channelsByRevenue = React.useMemo(() => sortMetrics(channelMetrics, "revenue"), [channelMetrics]);
   const channelsByDelay = React.useMemo(() => sortMetrics(channelMetrics, "delayRate"), [channelMetrics]);
-  const products = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.product), "profit"), [filteredRows]);
-  const categories = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.category), "profit"), [filteredRows]);
-  const sellers = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.seller), "profit"), [filteredRows]);
+  const onlineMetric = React.useMemo(() => channelMetrics.find((m) => m.name.toLowerCase() === "online"), [channelMetrics]);
+  const storeMetric = React.useMemo(() => channelMetrics.find((m) => m.name.toLowerCase() === "loja"), [channelMetrics]);
+
+  // P2 — Products & Categories multidimensional
+  const productsByProfit = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.product), "profit"), [filteredRows]);
+  const productsByMargin = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.product), "margin"), [filteredRows]);
+  const productsByQuantity = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.product), "quantity"), [filteredRows]);
+
+  const categoriesByProfit = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.category), "profit"), [filteredRows]);
+  const categoriesByMargin = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.category), "margin"), [filteredRows]);
+  const categoriesByQuantity = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.category), "quantity"), [filteredRows]);
+
+  // P4 — Sellers
+  const sellersByProfit = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.seller), "profit"), [filteredRows]);
+  const sellersByRevenue = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.seller), "revenue"), [filteredRows]);
+  const sellersByTarget = React.useMemo(() => [...aggregateBy(filteredRows, (row) => row.seller)].sort((a, b) => b.targetCompletion - a.targetCompletion), [filteredRows]);
+
+  // P5 — Client type
+  const clientTypesByProfit = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.clientType), "profit"), [filteredRows]);
+  const clientTypesByRevenue = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.clientType), "revenue"), [filteredRows]);
+
+  // P6 — Discount bands grouping
+  const discountBandsData = React.useMemo(() => {
+    const bands = [
+      { id: "0", label: "Sem Desconto", min: 0, max: 0 },
+      { id: "1", label: "0.1% a 5%", min: 0.0001, max: 0.05 },
+      { id: "2", label: "5.1% a 10%", min: 0.05001, max: 0.10 },
+      { id: "3", label: "10.1% a 20%", min: 0.10001, max: 0.20 },
+      { id: "4", label: "Mais de 20%", min: 0.20001, max: 1.0 },
+    ];
+
+    return bands.map((band) => {
+      const rowsInBand = filteredRows.filter((row) => {
+        if (band.min === 0 && band.max === 0) {
+          return row.discount === 0;
+        }
+        return row.discount > band.min && row.discount <= band.max;
+      });
+
+      const totalProfitInBand = rowsInBand.reduce((sum, r) => sum + r.profit, 0);
+      const totalRevenueInBand = rowsInBand.reduce((sum, r) => sum + r.revenue, 0);
+      const count = rowsInBand.length;
+
+      return {
+        name: band.label,
+        avgProfit: count ? totalProfitInBand / count : 0,
+        avgMargin: totalRevenueInBand ? (totalProfitInBand / totalRevenueInBand) * 100 : 0,
+        sales: count,
+      };
+    });
+  }, [filteredRows]);
+
+  // Logistical metrics
   const delivery = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.deliveryStatus), "delayRate"), [filteredRows]);
   const regionsByDelay = React.useMemo(() => sortMetrics(regions, "delayRate"), [regions]);
   const negativeProducts = React.useMemo(() => topNegativeProfitGroups(filteredRows, (row) => row.product), [filteredRows]);
   const correlation = React.useMemo(() => pearsonDiscountMargin(filteredRows), [filteredRows]);
   const kpis = React.useMemo(() => buildKpis(summary, baseKpis), [summary, baseKpis]);
 
-  // P5 — Client type
-  const clientTypes = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.clientType), "profit"), [filteredRows]);
   // P8 — Brands and product lines
   const brands = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.brand), "profit"), [filteredRows]);
   const productLines = React.useMemo(() => sortMetrics(aggregateBy(filteredRows, (row) => row.productLine), "profit"), [filteredRows]);
@@ -411,6 +483,9 @@ export function DashboardView() {
     () => [{ value: "all", label: "Todas as regioes" }, ...uniqueValues(salesRows, (row) => row.region).map((value) => ({ value, label: value }))],
     [],
   );
+
+  const products = productsByProfit;
+  const categories = categoriesByProfit;
 
   const selectedRegion = activeRegion ? regions.find((region) => region.region === activeRegion) : regions[0];
   const regionRankingMetric =
@@ -518,9 +593,11 @@ export function DashboardView() {
           id="sec-p0"
           badge="P0"
           question="Visao geral: saude financeira e tendencias"
-          description="Leitura de resultado, eficiência e volume antes de abrir a analise setorizada por perguntas de negocio."
+          description="Leitura de resultado, eficiencia e volume antes de abrir a analise setorizada por perguntas de negocio."
           badgeColor={BADGE_COLORS["sec-p0"]}
         />
+
+        <InsightCallout text="No consolidado de 2024, a Comercial Insight apresenta receita e lucro saudáveis. No entanto, o cumprimento individual de metas de vendas é de apenas 7,1%, e a taxa de atraso logístico ultrapassa 51%, indicando que a operação comercial e a logística de entregas precisam de séria reestruturação." />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {["revenue", "profit", "margin", "quantity", "ticket"].map((key) => (
@@ -584,6 +661,8 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p1"]}
         />
 
+        <InsightCallout text="A região Sudeste lidera amplamente em faturamento bruto (Receita), mas o Sul é a referência em eficiência operacional (maior Margem de Lucro). O Centro-Oeste opera como alerta máximo devido à menor margem, demandando auditoria imediata de preços e custos, enquanto o Norte e o Nordeste concentram os piores gargalos logísticos." />
+
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <ContextCard
             label="Regiao destaque"
@@ -626,7 +705,7 @@ export function DashboardView() {
           <ChartShell title="Leitura regional" description="Ranking regional e detalhe do estado/regiao em foco.">
             {selectedRegion ? (
               <div className="mb-5 rounded-md border border-white/10 bg-white/[0.045] p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{activeRegion ? "Hover no mapa" : "Maior receita"}</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{activeRegion ? "Foco no mapa" : "Maior receita"}</p>
                 <h3 className="mt-2 text-2xl font-semibold text-white">{selectedRegion.region}</h3>
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                   <span className="text-muted-foreground">
@@ -640,6 +719,12 @@ export function DashboardView() {
                   </span>
                   <span className="text-muted-foreground">
                     Atraso <strong className="block text-red-100">{formatPercent(selectedRegion.delayRate)}</strong>
+                  </span>
+                  <span className="text-muted-foreground">
+                    Vendas <strong className="block text-white">{formatNumber(selectedRegion.sales)}</strong>
+                  </span>
+                  <span className="text-muted-foreground">
+                    Ticket Médio <strong className="block text-white">{formatCompactBRL(selectedRegion.ticket)}</strong>
                   </span>
                 </div>
               </div>
@@ -661,35 +746,106 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p2"]}
         />
 
+        <InsightCallout text="Os produtos de informática (computadores e celulares) lideram o faturamento e o lucro absoluto. No entanto, categorias de menor volume físico demonstram maior rentabilidade percentual (margem), provando que a empresa depende de produtos eletrônicos de alto giro e baixa margem para gerar volume, mas necessita de mix complementar para proteger o resultado líquido." />
+
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <ContextCard
-            label="Produto lider"
-            title={productLeader?.name ?? "Sem produto"}
-            value={productLeader ? formatCompactBRL(productLeader.profit) : "-"}
-            helper={formatLeaderHelper(productLeader)}
+            label="Produto mais vendido"
+            title={productsByQuantity[0]?.name ?? "Sem produto"}
+            value={productsByQuantity[0] ? formatNumber(productsByQuantity[0].quantity) : "-"}
+            helper="Unidades físicas vendidas no período"
+            tone="violet"
           />
           <ContextCard
-            label="Categoria lider"
-            title={categoryLeader?.name ?? "Sem categoria"}
-            value={categoryLeader ? formatCompactBRL(categoryLeader.profit) : "-"}
-            helper={formatLeaderHelper(categoryLeader)}
+            label="Categoria mais vendida"
+            title={categoriesByQuantity[0]?.name ?? "Sem categoria"}
+            value={categoriesByQuantity[0] ? formatNumber(categoriesByQuantity[0].quantity) : "-"}
+            helper="Unidades físicas vendidas no período"
+            tone="violet"
+          />
+          <ContextCard
+            label="Produto maior margem"
+            title={productsByMargin[0]?.name ?? "Sem produto"}
+            value={productsByMargin[0] ? formatPercent(productsByMargin[0].margin) : "-"}
+            helper="Margem de lucro média operacional"
             tone="lime"
           />
           <ContextCard
-            label="Maior receita"
-            title={(() => { const top = sortMetrics(products, "revenue")[0]; return top?.name ?? "-"; })()}
-            value={(() => { const top = sortMetrics(products, "revenue")[0]; return top ? formatCompactBRL(top.revenue) : "-"; })()}
-            helper="Produto lider em receita (nem sempre maior lucro)"
-            tone="violet"
+            label="Categoria maior margem"
+            title={categoriesByMargin[0]?.name ?? "Sem categoria"}
+            value={categoriesByMargin[0] ? formatPercent(categoriesByMargin[0].margin) : "-"}
+            helper="Margem de lucro média operacional"
+            tone="lime"
+          />
+          <ContextCard
+            label="Produto maior lucro total"
+            title={productsByProfit[0]?.name ?? "Sem produto"}
+            value={productsByProfit[0] ? formatCompactBRL(productsByProfit[0].profit) : "-"}
+            helper="Contribuição de lucro total acumulado"
+            tone="lime"
+          />
+          <ContextCard
+            label="Categoria maior lucro total"
+            title={categoriesByProfit[0]?.name ?? "Sem categoria"}
+            value={categoriesByProfit[0] ? formatCompactBRL(categoriesByProfit[0].profit) : "-"}
+            helper="Contribuição de lucro total acumulado"
+            tone="lime"
           />
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <ChartShell title="Produtos" description="Ranking por lucro total.">
-            <MetricBarList items={products} metric="profit" limit={8} />
+        <div className="grid gap-6 xl:grid-cols-3">
+          <ChartShell
+            title="Lucro Total"
+            description="Ranking por lucro financeiro gerado."
+            action={
+              <Tabs
+                items={rankingTabItems}
+                value={rank1Tab}
+                onValueChange={(value) => setRank1Tab(value as "product" | "category")}
+              />
+            }
+          >
+            <MetricBarList
+              items={rank1Tab === "product" ? productsByProfit : categoriesByProfit}
+              metric="profit"
+              limit={8}
+            />
           </ChartShell>
-          <ChartShell title="Categorias" description="Concentracao de resultado por categoria.">
-            <MetricBarList items={categories} metric="profit" limit={6} />
+
+          <ChartShell
+            title="Margem de Lucro"
+            description="Ranking por margem percentual média."
+            action={
+              <Tabs
+                items={rankingTabItems}
+                value={rank2Tab}
+                onValueChange={(value) => setRank2Tab(value as "product" | "category")}
+              />
+            }
+          >
+            <MetricBarList
+              items={rank2Tab === "product" ? productsByMargin : categoriesByMargin}
+              metric="margin"
+              limit={8}
+            />
+          </ChartShell>
+
+          <ChartShell
+            title="Quantidade Vendida"
+            description="Ranking por unidades físicas comercializadas."
+            action={
+              <Tabs
+                items={rankingTabItems}
+                value={rank3Tab}
+                onValueChange={(value) => setRank3Tab(value as "product" | "category")}
+              />
+            }
+          >
+            <MetricBarList
+              items={rank3Tab === "product" ? productsByQuantity : categoriesByQuantity}
+              metric="quantity"
+              limit={8}
+            />
           </ChartShell>
         </div>
       </section>
@@ -706,52 +862,78 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p3"]}
         />
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <ChartShell title="Canais por receita" description="Ranking por receita e leitura de margem por canal.">
-            <MetricBarList items={channelsByRevenue} metric="revenue" limit={4} />
-          </ChartShell>
-          <ChartShell title="Comparacao detalhada" description="Metricas lado a lado por canal.">
-            <div className="grid gap-4">
-              {channelsByRevenue.map((ch) => (
-                <div key={ch.name} className="rounded-md border border-white/10 bg-white/[0.04] p-4">
-                  <h4 className="text-sm font-semibold text-white">{ch.name}</h4>
-                  <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <span className="text-muted-foreground">Receita</span>
-                      <p className="metric-number mt-0.5 font-semibold text-white">{formatCompactBRL(ch.revenue)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Lucro</span>
-                      <p className="metric-number mt-0.5 font-semibold text-white">{formatCompactBRL(ch.profit)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Margem</span>
-                      <p className={cn("metric-number mt-0.5 font-semibold", ch.margin < 0.18 ? "text-red-100" : "text-lime-signal")}>
-                        {formatPercent(ch.margin)}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Vendas</span>
-                      <p className="metric-number mt-0.5 font-semibold text-white">{formatNumber(ch.sales)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Meta</span>
-                      <p className={cn("metric-number mt-0.5 font-semibold", ch.targetCompletion < 0.9 ? "text-red-100" : "text-lime-signal")}>
-                        {formatPercent(ch.targetCompletion)}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Atraso</span>
-                      <p className={cn("metric-number mt-0.5 font-semibold", ch.delayRate > 0.5 ? "text-red-100" : "text-lime-signal")}>
-                        {formatPercent(ch.delayRate)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        <InsightCallout text="O canal Online supera as lojas físicas em lucro total, receita, cumprimento de metas e volume de transações. No entanto, a Loja física atua com uma margem de lucro percentual superior e apresenta menor taxa de atrasos na entrega, demonstrando que a operação física é mais rentável por venda e mais confiável logisticamente, enquanto o e-commerce oferece escalabilidade comercial." />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Card className="glass-panel border-cyan-500/20 bg-cyan-950/10 p-5">
+            <Badge variant="violet" className="mb-3">Online (Volume e Execução)</Badge>
+            <h4 className="text-lg font-semibold text-white">Canal Líder em Lucro, Receita, Meta e Vendas</h4>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+              <div>
+                <span>Lucro:</span>
+                <p className="text-sm font-semibold text-white">{onlineMetric ? formatCompactBRL(onlineMetric.profit) : "-"}</p>
+              </div>
+              <div>
+                <span>Receita:</span>
+                <p className="text-sm font-semibold text-white">{onlineMetric ? formatCompactBRL(onlineMetric.revenue) : "-"}</p>
+              </div>
+              <div>
+                <span>Atingimento Meta:</span>
+                <p className="text-sm font-semibold text-lime-signal">{onlineMetric ? formatPercent(onlineMetric.targetCompletion) : "-"}</p>
+              </div>
+              <div>
+                <span>Vendas:</span>
+                <p className="text-sm font-semibold text-white">{onlineMetric ? formatNumber(onlineMetric.sales) : "-"}</p>
+              </div>
             </div>
-          </ChartShell>
+          </Card>
+          <Card className="glass-panel border-lime-500/20 bg-lime-950/10 p-5">
+            <Badge variant="success" className="mb-3">Loja Física (Rentabilidade)</Badge>
+            <h4 className="text-lg font-semibold text-white">Canal Líder em Margem de Lucro</h4>
+            <div className="mt-4 text-xs text-muted-foreground">
+              <span>Margem de Lucro:</span>
+              <p className="text-2xl font-bold text-lime-signal mt-1">{storeMetric ? formatPercent(storeMetric.margin) : "-"}</p>
+              <p className="mt-3 text-[11px]">
+                A operação física preserva a margem por venda reduzindo custos agregados e operando com menor índice de descontos.
+              </p>
+            </div>
+          </Card>
         </div>
+
+        <Card className="glass-panel">
+          <CardHeader>
+            <CardTitle>Eficiência Operacional e Margem por Canal</CardTitle>
+            <CardDescription>Visão tabular e comparativa da rentabilidade do Online contra a Loja Física.</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Canal</TableHead>
+                  <TableHead className="text-right">Vendas</TableHead>
+                  <TableHead className="text-right">Receita</TableHead>
+                  <TableHead className="text-right">Lucro</TableHead>
+                  <TableHead className="text-right">Margem de Lucro</TableHead>
+                  <TableHead className="text-right">Cumprimento de Meta</TableHead>
+                  <TableHead className="text-right">Taxa de Atraso</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {channelMetrics.map((ch) => (
+                  <TableRow key={ch.name}>
+                    <TableCell className="font-medium text-white">{ch.name}</TableCell>
+                    <TableCell className="text-right">{formatNumber(ch.sales)}</TableCell>
+                    <TableCell className="text-right">{formatCompactBRL(ch.revenue)}</TableCell>
+                    <TableCell className="text-right">{formatCompactBRL(ch.profit)}</TableCell>
+                    <TableCell className="text-right font-semibold text-lime-signal">{formatPercent(ch.margin)}</TableCell>
+                    <TableCell className="text-right">{formatPercent(ch.targetCompletion)}</TableCell>
+                    <TableCell className="text-right text-red-100">{formatPercent(ch.delayRate)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </section>
 
       {/* ════════════════════════════════════════════ */}
@@ -766,22 +948,41 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p4"]}
         />
 
-        <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
-          <ChartShell title="Vendedores" description="Ranking por lucro total e qualidade de margem.">
-            <MetricBarList items={sellers} metric="profit" limit={8} />
+        <InsightCallout text="A performance do time comercial revela alta concentração: poucos vendedores entregam a maior parte dos resultados. O vendedor líder gera lucros significativos preservando a margem média, enquanto vendedores de menor performance tendem a praticar descontos mais agressivos e operam com margens de contribuição muito baixas na tentativa de bater metas de faturamento." />
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ContextCard
+            label="Maior Lucro"
+            title={sellersByProfit[0]?.name ?? "Sem dados"}
+            value={sellersByProfit[0] ? formatCompactBRL(sellersByProfit[0].profit) : "-"}
+            helper={sellersByProfit[0] ? `${formatPercent(sellersByProfit[0].margin)} margem de lucro` : ""}
+            tone="lime"
+          />
+          <ContextCard
+            label="Maior Receita"
+            title={sellersByRevenue[0]?.name ?? "Sem dados"}
+            value={sellersByRevenue[0] ? formatCompactBRL(sellersByRevenue[0].revenue) : "-"}
+            helper={sellersByRevenue[0] ? `${formatNumber(sellersByRevenue[0].sales)} transações realizadas` : ""}
+            tone="violet"
+          />
+          <ContextCard
+            label="Maior Cumprimento de Meta"
+            title={sellersByTarget[0]?.name ?? "Sem dados"}
+            value={sellersByTarget[0] ? formatPercent(sellersByTarget[0].targetCompletion) : "-"}
+            helper={sellersByTarget[0] ? `Meta: ${formatCompactBRL(sellersByTarget[0].target)}` : ""}
+            tone="lime"
+          />
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-3">
+          <ChartShell title="Ranking por Lucro Total" description="Vendedores ordenados pelo lucro acumulado.">
+            <MetricBarList items={sellersByProfit} metric="profit" limit={6} />
           </ChartShell>
-          <ChartShell title="Consistencia por vendedor" description="Cumprimento da meta dos principais vendedores por lucro.">
-            <div className="space-y-4">
-              {sellers.slice(0, 6).map((seller) => (
-                <div key={seller.name}>
-                  <div className="mb-1.5 flex justify-between gap-3 text-xs text-muted-foreground">
-                    <span className="truncate">{seller.name}</span>
-                    <span className="metric-number text-slate-200">{formatPercent(seller.targetCompletion)}</span>
-                  </div>
-                  <Progress value={seller.targetCompletion * 100} tone={seller.targetCompletion < 0.9 ? "red" : "lime"} />
-                </div>
-              ))}
-            </div>
+          <ChartShell title="Ranking por Receita" description="Vendedores ordenados pelo faturamento bruto.">
+            <MetricBarList items={sellersByRevenue} metric="revenue" limit={6} />
+          </ChartShell>
+          <ChartShell title="Ranking por Cumprimento de Meta" description="Vendedores ordenados pelo cumprimento da meta comercial.">
+            <MetricBarList items={sellersByTarget} metric="targetCompletion" limit={6} />
           </ChartShell>
         </div>
       </section>
@@ -798,50 +999,31 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p5"]}
         />
 
+        <InsightCallout text="Os clientes do tipo Recorrente geram muito mais receita e lucro do que clientes novos. Isso comprova que a fidelização de clientes e a manutenção do relacionamento de longo prazo trazem retornos financeiros expressivos e seguros, enquanto clientes novos demandam maior esforço e geram volume consideravelmente inferior." />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ContextCard
+            label="Tipo cliente maior receita"
+            title={clientTypesByRevenue[0]?.name ?? "Sem dados"}
+            value={clientTypesByRevenue[0] ? formatCompactBRL(clientTypesByRevenue[0].revenue) : "-"}
+            helper={clientTypesByRevenue[0] ? `${formatNumber(clientTypesByRevenue[0].sales)} vendas no total` : ""}
+            tone="violet"
+          />
+          <ContextCard
+            label="Tipo cliente maior lucro"
+            title={clientTypesByProfit[0]?.name ?? "Sem dados"}
+            value={clientTypesByProfit[0] ? formatCompactBRL(clientTypesByProfit[0].profit) : "-"}
+            helper={clientTypesByProfit[0] ? `${formatPercent(clientTypesByProfit[0].margin)} margem de lucro` : ""}
+            tone="lime"
+          />
+        </div>
+
         <div className="grid gap-6 xl:grid-cols-2">
-          <ChartShell title="Tipo de cliente" description="Ranking por lucro total.">
-            <MetricBarList items={clientTypes} metric="profit" limit={4} />
+          <ChartShell title="Ranking por Receita" description="Tipos de cliente ordenados por faturamento bruto total.">
+            <MetricBarList items={clientTypesByRevenue} metric="revenue" limit={4} />
           </ChartShell>
-          <ChartShell title="Comparacao detalhada" description="Metricas lado a lado por tipo de cliente.">
-            <div className="grid gap-4">
-              {clientTypes.map((ct) => (
-                <div key={ct.name} className="rounded-md border border-white/10 bg-white/[0.04] p-4">
-                  <h4 className="text-sm font-semibold text-white">{ct.name}</h4>
-                  <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <span className="text-muted-foreground">Receita</span>
-                      <p className="metric-number mt-0.5 font-semibold text-white">{formatCompactBRL(ct.revenue)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Lucro</span>
-                      <p className="metric-number mt-0.5 font-semibold text-white">{formatCompactBRL(ct.profit)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Margem</span>
-                      <p className={cn("metric-number mt-0.5 font-semibold", ct.margin < 0.18 ? "text-red-100" : "text-lime-signal")}>
-                        {formatPercent(ct.margin)}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Vendas</span>
-                      <p className="metric-number mt-0.5 font-semibold text-white">{formatNumber(ct.sales)}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Meta</span>
-                      <p className={cn("metric-number mt-0.5 font-semibold", ct.goalHitRate < 0.1 ? "text-red-100" : "text-lime-signal")}>
-                        {formatPercent(ct.goalHitRate)}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Atraso</span>
-                      <p className={cn("metric-number mt-0.5 font-semibold", ct.delayRate > 0.5 ? "text-red-100" : "text-lime-signal")}>
-                        {formatPercent(ct.delayRate)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <ChartShell title="Ranking por Lucro" description="Tipos de cliente ordenados por lucro total acumulado.">
+            <MetricBarList items={clientTypesByProfit} metric="profit" limit={4} />
           </ChartShell>
         </div>
       </section>
@@ -858,47 +1040,57 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p6"]}
         />
 
+        <InsightCallout text="A análise por faixas prova a relação inversa entre descontos e lucratividade. Vendas com 0% ou até 5% de desconto operam com margens excelentes (acima de 25%) e lucros médios consistentes. Porém, à medida que o desconto ultrapassa 10%, tanto o Lucro Médio em reais quanto a Margem Média despencam drasticamente, culminando em 123 vendas com prejuízo líquido." />
+
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {["averageDiscount", "negativeProfitSales"].map((key) => (
             <KpiCard key={key} {...kpis[key]} />
           ))}
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1fr_0.82fr]">
+        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <ChartShell
-            title="Desconto x margem"
-            description={`Dispersao por venda. Correlacao de Pearson no filtro: ${formatDecimal(correlation, 3)}.`}
+            title="Faixas de desconto vs Lucratividade"
+            description="Lucro Médio (R$, Barra - Esquerda) e Margem Média (%, Linha - Direita) por faixa de desconto."
           >
             <div className="h-[24rem]">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ left: 0, right: 18, top: 10, bottom: 8 }}>
+                <ComposedChart data={discountBandsData} margin={{ left: 0, right: 18, top: 10, bottom: 8 }}>
                   <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-                  <XAxis
-                    type="number"
-                    dataKey="discount"
-                    name="Desconto"
-                    tickLine={false}
-                    axisLine={false}
+                  <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    yAxisId="left"
                     tick={{ fill: "#94a3b8", fontSize: 12 }}
-                    tickFormatter={(value) => `${formatDecimal(Number(value), 0)}%`}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={formatCompactBRL}
+                    width={70}
                   />
                   <YAxis
-                    type="number"
-                    dataKey="margin"
-                    name="Margem"
-                    tickLine={false}
-                    axisLine={false}
+                    yAxisId="right"
+                    orientation="right"
                     tick={{ fill: "#94a3b8", fontSize: 12 }}
-                    tickFormatter={(value) => `${formatDecimal(Number(value), 0)}%`}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => `${formatDecimal(value, 0)}%`}
+                    width={40}
                   />
-                  <ZAxis type="number" dataKey="revenue" range={[28, 220]} />
-                  <ChartTooltip cursor={{ strokeDasharray: "3 3", stroke: "rgba(255,255,255,0.24)" }} content={<ScatterSaleTooltip />} />
-                  <Scatter data={scatter} fill="#b5e24a" fillOpacity={0.62}>
-                    {scatter.map((item, index) => (
-                      <Cell key={`${item.product}-${index}`} fill={item.margin < 0 ? "#e25765" : item.discount > 20 ? "#7c5cff" : "#b5e24a"} />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        title={(label) => `Faixa: ${label}`}
+                        nameFormatter={(name) => (name === "avgProfit" ? "Lucro Médio" : "Margem Média")}
+                        valueFormatter={(value, name) =>
+                          name === "avgProfit"
+                            ? formatCompactBRL(Number(value))
+                            : `${formatDecimal(Number(value), 2)}%`
+                        }
+                      />
+                    }
+                  />
+                  <Bar yAxisId="left" dataKey="avgProfit" name="avgProfit" fill="#b5e24a" radius={[4, 4, 0, 0]} barSize={40} />
+                  <Line yAxisId="right" type="monotone" dataKey="avgMargin" name="avgMargin" stroke="#7c5cff" strokeWidth={3} activeDot={{ r: 6 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </ChartShell>
@@ -920,6 +1112,8 @@ export function DashboardView() {
           description="Impacto de atrasos por status, canal e regiao para orientar priorizacao operacional."
           badgeColor={BADGE_COLORS["sec-p7"]}
         />
+
+        <InsightCallout text="A ineficiência logística impacta diretamente a rentabilidade: as vendas com status Atrasado geram um volume de faturamento expressivo, mas operam com margens de lucro reduzidas se comparadas às entregas realizadas no prazo. Isso indica que custos operacionais e administrativos de devolução/atraso corroem a margem líquida." />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard {...kpis.delayRate} />
@@ -952,10 +1146,32 @@ export function DashboardView() {
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">
               {delivery.map((item) => (
-                <div key={item.name} className="rounded-md border border-white/10 bg-white/[0.045] p-3">
-                  <p className="text-xs text-muted-foreground">{item.name}</p>
-                  <p className="metric-number mt-1 text-lg font-semibold text-white">{formatNumber(item.sales)}</p>
-                  <p className="text-[11px] text-muted-foreground">{formatPercent(item.margin)} margem</p>
+                <div key={item.name} className="rounded-md border border-white/10 bg-white/[0.045] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{item.name}</p>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Vendas:</span>
+                      <span className="font-semibold text-white">{formatNumber(item.sales)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Receita:</span>
+                      <span className="font-semibold text-white">{formatCompactBRL(item.revenue)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Lucro:</span>
+                      <span className={cn("font-semibold", item.profit < 0 ? "text-red-100" : "text-lime-signal")}>
+                        {formatCompactBRL(item.profit)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Margem:</span>
+                      <span className="font-semibold text-white">{formatPercent(item.margin)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Ating. Meta:</span>
+                      <span className="font-semibold text-white">{formatPercent(item.targetCompletion)}</span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -983,6 +1199,25 @@ export function DashboardView() {
           description="Ranking por marca e linha de produto, priorizando lucro e margem."
           badgeColor={BADGE_COLORS["sec-p8"]}
         />
+
+        <InsightCallout text="A rentabilidade de produtos está concentrada nas principais marcas e linhas. Focar a estratégia comercial e os esforços de marketing nessas marcas líderes assegura maior contribuição para o lucro, enquanto linhas secundárias com baixa margem devem ter seu espaço reduzido." />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ContextCard
+            label="Marca Líder em Lucro"
+            title={brands[0]?.name ?? "Sem dados"}
+            value={brands[0] ? formatCompactBRL(brands[0].profit) : "-"}
+            helper={brands[0] ? `${formatPercent(brands[0].margin)} margem / ${formatNumber(brands[0].sales)} vendas` : ""}
+            tone="lime"
+          />
+          <ContextCard
+            label="Linha de Produto Líder em Lucro"
+            title={productLines[0]?.name ?? "Sem dados"}
+            value={productLines[0] ? formatCompactBRL(productLines[0].profit) : "-"}
+            helper={productLines[0] ? `${formatPercent(productLines[0].margin)} margem / ${formatNumber(productLines[0].sales)} vendas` : ""}
+            tone="violet"
+          />
+        </div>
 
         <div className="grid gap-6 xl:grid-cols-2">
           <ChartShell title="Marcas" description="Ranking por lucro total por marca.">

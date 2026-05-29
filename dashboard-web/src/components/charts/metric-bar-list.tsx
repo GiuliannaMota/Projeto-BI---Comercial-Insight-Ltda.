@@ -4,7 +4,7 @@ import { cn } from "../../lib/utils";
 
 interface MetricBarListProps {
   items: DimensionMetric[];
-  metric?: "revenue" | "profit" | "margin" | "quantity" | "delayRate" | "negativeProfitSales";
+  metric?: "revenue" | "profit" | "margin" | "delayRate" | "quantity" | "negativeProfitSales" | "targetCompletion";
   limit?: number;
   dangerMetric?: boolean;
 }
@@ -15,13 +15,13 @@ function metricValue(item: DimensionMetric, metric: NonNullable<MetricBarListPro
 
 function formatMetric(value: number, metric: NonNullable<MetricBarListProps["metric"]>) {
   if (metric === "revenue" || metric === "profit") return formatCompactBRL(value);
-  if (metric === "margin" || metric === "delayRate") return formatPercent(value);
+  if (metric === "margin" || metric === "delayRate" || metric === "targetCompletion") return formatPercent(value);
   return formatNumber(value);
 }
 
 function barColorClass(danger: boolean, metric: NonNullable<MetricBarListProps["metric"]>) {
   if (danger) return "metric-bar-fill-red";
-  if (metric === "revenue") return "metric-bar-fill-violet";
+  if (metric === "revenue" || metric === "targetCompletion") return "metric-bar-fill-violet";
   return "metric-bar-fill-lime";
 }
 
