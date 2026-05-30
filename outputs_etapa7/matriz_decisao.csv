@@ -1,0 +1,9 @@
+﻿Problema Identificado,Evidência nos Dados,Impacto no Negócio,Recomendação Estratégica,Prioridade
+Baixo atingimento de metas,Apenas cerca de 7% das vendas atingiram a meta individual.,Dificulta a avaliação real da performance comercial.,"Recalibrar metas por região, canal, vendedor e produto.",Alta
+Descontos elevados reduzem margem,Descontos maiores apresentam relação negativa com a margem de lucro.,Reduz a rentabilidade mesmo quando o volume de vendas aumenta.,Criar política formal de descontos com níveis de aprovação.,Alta
+Vendas com lucro negativo,Existem vendas em que o lucro final é menor que zero.,Gera faturamento com destruição de valor financeiro.,Criar alerta ou bloqueio para vendas com margem negativa.,Alta
+Alta taxa de entregas atrasadas,Mais de 50% das entregas estão atrasadas.,"Pode afetar satisfação, recompra e percepção de qualidade.","Monitorar atraso por canal, região, produto e vendedor.",Alta
+Centro-Oeste com baixa margem,"A região possui alta receita, mas menor margem entre as regiões.",Gera alto faturamento com baixa eficiência financeira.,"Auditar descontos, custos, produtos e vendedores da região.",Média
+Produtos de alta receita com margem menor,"Monitor lidera em receita, mas não lidera em margem.","Pode levar a decisões comerciais que aumentam receita, mas reduzem lucro.","Revisar preço, desconto e fornecedores de produtos com baixa margem.",Média
+Avaliação comercial focada apenas em receita,O vendedor líder em receita não é necessariamente o líder em lucro.,Pode incentivar vendedores a priorizarem faturamento em vez de rentabilidade.,"Criar ranking comercial baseado em lucro, margem e meta.",Média
+Dependência forte de duas categorias no lucro,Informática e Periféricos concentram mais de 80% do lucro.,Cria concentração estratégica em poucas categorias.,Proteger categorias-chave e diversificar oportunidades.,Alta

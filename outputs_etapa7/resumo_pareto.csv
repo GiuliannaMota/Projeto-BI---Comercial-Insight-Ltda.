@@ -1,0 +1,9 @@
+﻿Análise,Total de itens,Itens até atingir 80%,% de itens necessários,Participação acumulada
+Produto vs. Lucro,8,6,0.75,0.8019708676159718
+Categoria vs. Lucro,4,2,0.5,0.8417745291029629
+Região vs. Lucro,5,4,0.8,0.8288365330399483
+Vendedor vs. Lucro,20,15,0.75,0.8299632015546657
+Marca vs. Lucro,4,4,1.0,0.9999999999999999
+Linha vs. Lucro,3,3,1.0,1.0
+Cliente vs. Receita,199,118,0.592964824120603,0.8038559845017087
+Cliente vs. Lucro,199,102,0.5125628140703518,0.8009557493245295
