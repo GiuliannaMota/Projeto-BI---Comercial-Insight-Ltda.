@@ -259,6 +259,27 @@ const rankingTabItems = [
 
 const SELLER_RANKING_LIMIT = 10;
 
+const sectionInsights = {
+  p0:
+    "Existem vendas que geram receita, mas apresentam lucro negativo. Algumas vendas geraram faturamento, mas terminaram com lucro negativo. Isso mostra que vender mais nem sempre significa lucrar mais. A empresa deve monitorar margem e lucro por venda para evitar operações que geram prejuízo.",
+  p1:
+    "A região Sul é referência de desempenho, enquanto o Centro-Oeste vende bem, mas possui baixa margem. A empresa não deve avaliar regiões apenas pelo faturamento. O Sul pode ser usado como referência de boas práticas, enquanto o Centro-Oeste precisa ser investigado por vender muito, mas lucrar proporcionalmente menos.",
+  p2:
+    "Produtos com maior receita não são necessariamente os mais rentáveis. A empresa deve priorizar produtos e categorias com maior rentabilidade, e não apenas aqueles com maior volume de vendas ou receita.",
+  p3:
+    "O canal Online gera escala, enquanto a Loja apresenta margem superior. Cada canal possui um papel estratégico diferente: o Online gera escala, enquanto a Loja pode ser mais eficiente proporcionalmente.",
+  p4:
+    "A avaliação dos vendedores deve considerar lucro e margem, não apenas receita. A avaliação da equipe comercial deve considerar lucro, margem, desconto médio e atingimento de meta, e não somente faturamento.",
+  p5:
+    "Clientes recorrentes sustentam o volume, mas clientes novos possuem boa margem. A empresa deve manter estratégias de fidelização, mas também investir na aquisição de novos clientes com controle de descontos.",
+  p6:
+    "Descontos elevados reduzem a rentabilidade. Descontos elevados reduzem a rentabilidade e precisam ser controlados por uma política comercial mais rígida.",
+  p7:
+    "Atrasos de entrega são um problema operacional relevante. A entrega deve ser tratada como fator estratégico, pois problemas operacionais podem afetar desempenho comercial e satisfação do cliente.",
+  p8:
+    "A marca Alpha possui maior contribuição para o lucro, enquanto as linhas de produto apresentam participação equilibrada. A empresa possui marcas e linhas relevantes para o lucro, mas não depende exclusivamente de uma única linha de produto.",
+} as const;
+
 const requestedActionPlanRows = [
   {
     problema: "Baixo atingimento de metas",
@@ -932,7 +953,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p0"]}
         />
 
-        <InsightCallout text={buildOverviewInsight(summary)} />
+        <InsightCallout text={sectionInsights.p0} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {["revenue", "profit", "margin", "quantity", "ticket"].map((key) => (
@@ -996,7 +1017,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p1"]}
         />
 
-        <InsightCallout text={buildRegionInsight(regions)} />
+        <InsightCallout text={sectionInsights.p1} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <ContextCard
@@ -1081,7 +1102,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p2"]}
         />
 
-        <InsightCallout text={buildProductInsight(productsByProfit, productsByMargin, categoriesByProfit)} />
+        <InsightCallout text={sectionInsights.p2} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <ContextCard
@@ -1197,7 +1218,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p3"]}
         />
 
-        <InsightCallout text={buildChannelInsight(onlineMetric, storeMetric)} />
+        <InsightCallout text={sectionInsights.p3} />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Card className="glass-panel border-cyan-500/20 bg-cyan-950/10 p-5">
@@ -1283,7 +1304,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p4"]}
         />
 
-        <InsightCallout text={buildSellerInsight(sellersByProfit, sellersByRevenue, sellersByTarget)} />
+        <InsightCallout text={sectionInsights.p4} />
 
         <div className="grid gap-3 sm:grid-cols-3">
           <ContextCard
@@ -1431,7 +1452,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p5"]}
         />
 
-        <InsightCallout text={buildClientInsight(clientTypesByRevenue, clientTypesByProfit)} />
+        <InsightCallout text={sectionInsights.p5} />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <ContextCard
@@ -1472,7 +1493,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p6"]}
         />
 
-        <InsightCallout text={buildDiscountInsight(summary, correlation, discountBandsData)} />
+        <InsightCallout text={sectionInsights.p6} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {["averageDiscount", "negativeProfitSales"].map((key) => (
@@ -1545,7 +1566,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p7"]}
         />
 
-        <InsightCallout text={buildDeliveryInsight(delivery)} />
+        <InsightCallout text={sectionInsights.p7} />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard {...kpis.delayRate} />
@@ -1632,7 +1653,7 @@ export function DashboardView() {
           badgeColor={BADGE_COLORS["sec-p8"]}
         />
 
-        <InsightCallout text={buildBrandInsight(brands, productLines, summary)} />
+        <InsightCallout text={sectionInsights.p8} />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <ContextCard

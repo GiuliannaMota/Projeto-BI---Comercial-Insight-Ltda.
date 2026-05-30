@@ -224,7 +224,7 @@ export function GithubSalesCalendar({ rows, year = 2024 }: GithubSalesCalendarPr
               </div>
             ) : null}
             <div className="mt-4 flex items-center justify-end gap-2 text-[11px] text-muted-foreground">
-              <span>Menos</span>
+              <span>Menos vendas</span>
               {[0, 1, 2, 3, 4].map((level) => (
                 <span
                   key={level}
@@ -242,7 +242,7 @@ export function GithubSalesCalendar({ rows, year = 2024 }: GithubSalesCalendarPr
                   )}
                 />
               ))}
-              <span>Mais</span>
+              <span>Mais vendas</span>
             </div>
           </div>
         </ScrollArea>
